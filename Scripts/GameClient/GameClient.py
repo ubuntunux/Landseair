@@ -8,7 +8,6 @@ from GameClient.GameState import *
 
 
 GRAVITY = 20.0
-JUMP_SPEED = 10.0
 MOVE_SPEED = 6.0
 BOUND_BOX_OFFSET = 0.1
 EPSILON = sys.float_info.epsilon
@@ -52,32 +51,17 @@ class GameClient(Singleton):
         self.resource_manager = core_manager.resource_manager
         self.scene_manager = core_manager.scene_manager
 
-        self.resource_manager.open_scene('stage')
+        self.resource_manager.open_scene('stage00')
 
-        animation_list = ['avoid',
-                          'elbow',
-                          'falloff',
-                          'grab_attack',
-                          'grab_attack_hit',
-                          'grab_attack_hit_loop',
-                          'grab_attack_loop',
-                          'heading',
-                          'hit',
-                          'idle',
-                          'jump',
-                          'jump_kick',
-                          'kick',
-                          'punch',
-                          'standup',
-                          'walk',
-                          'lie_down']
+        animation_list = ['idle']
 
         for key in animation_list:
-            self.animation_meshes[key] = self.resource_manager.get_mesh("player_" + key)
+            # self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00_" + key)
+            self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00")
 
         main_camera = self.scene_manager.main_camera
         pos = main_camera.transform.pos - main_camera.transform.front * 5.0
-        player_model = self.resource_manager.get_model("player")
+        player_model = self.resource_manager.get_model("Plane00")
         self.player = self.scene_manager.add_object(model=player_model, pos=pos)
         # self.enemy = self.scene_manager.add_object(model=player_model, pos=pos)
         # self.player.transform.set_pos([0.0, -1.99, -11.0])
@@ -119,33 +103,16 @@ class GameClient(Singleton):
         if press_keys in key_map:
             self.key_flag |= KEY_FLAG.MOVE
 
-        if keydown[Keyboard.SPACE]:
-            self.key_flag |= KEY_FLAG.JUMP
-
-        if btn_left:
-            self.key_flag |= KEY_FLAG.PUNCH
-
-        if btn_right:
-            self.key_flag |= KEY_FLAG.KICK
-
         state = self.state_manager.get_state()
 
-        if (self.key_flag & KEY_FLAG.MOVE) and state.enable_rotation:
+        if self.key_flag & KEY_FLAG.MOVE:
             self.player.transform.set_yaw(key_map[press_keys])
 
-        if self.on_ground:
-            if (self.key_flag & KEY_FLAG.JUMP) and state.enable_jump:
-                self.on_ground = False
-                self.velocity[1] = JUMP_SPEED
+        if self.key_flag & KEY_FLAG.MOVE:
+            self.velocity[0] = self.player.transform.front[0] * MOVE_SPEED
+            self.velocity[2] = self.player.transform.front[2] * MOVE_SPEED
 
-            if (self.key_flag & KEY_FLAG.MOVE) and state.enable_move:
-                self.velocity[0] = self.player.transform.front[0] * MOVE_SPEED
-                self.velocity[2] = self.player.transform.front[2] * MOVE_SPEED
-            else:
-                self.velocity[0] = 0.0
-                self.velocity[2] = 0.0
-
-        self.velocity[1] -= GRAVITY * delta
+        # self.velocity[1] -= GRAVITY * delta
 
         old_player_pos = self.player.transform.get_pos().copy()
         move_vector = self.velocity * delta
