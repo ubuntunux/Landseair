@@ -3,7 +3,7 @@ import numpy as np
 
 from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger
-from PyEngine3D.Utilities import Singleton, StateMachine, StateItem, Float3
+from PyEngine3D.Utilities import Singleton, StateMachine, StateItem, Float3, HALF_PI, PI, TWO_PI
 from GameClient.GameState import *
 
 
@@ -11,22 +11,6 @@ GRAVITY = 20.0
 MOVE_SPEED = 6.0
 BOUND_BOX_OFFSET = 0.1
 EPSILON = sys.float_info.epsilon
-
-KEY_FLAG_NONE = 0
-KEY_FLAG_W = 1 << 0
-KEY_FLAG_S = 1 << 1
-KEY_FLAG_A = 1 << 2
-KEY_FLAG_D = 1 << 3
-
-key_map = dict()
-key_map[KEY_FLAG_W] = -1.57079
-key_map[KEY_FLAG_S] = 1.57079
-key_map[KEY_FLAG_A] = 0.0
-key_map[KEY_FLAG_D] = 3.141592
-key_map[KEY_FLAG_W | KEY_FLAG_A] = -0.785395
-key_map[KEY_FLAG_W | KEY_FLAG_D] = 3.926987
-key_map[KEY_FLAG_S | KEY_FLAG_A] = 0.785395
-key_map[KEY_FLAG_S | KEY_FLAG_D] = 2.356191
 
 
 class GameClient(Singleton):
@@ -37,7 +21,6 @@ class GameClient(Singleton):
         self.scene_manager = None
         self.player = None
         self.enemy = None
-        self.key_flag = KEY_FLAG.NONE
         self.on_ground = False
         self.velocity = Float3(0.0, 0.0, 0.0)
         self.animation_meshes = {}
@@ -64,9 +47,10 @@ class GameClient(Singleton):
         player_model = self.resource_manager.get_model("Plane00")
         self.player = self.scene_manager.add_object(model=player_model, pos=pos)
         # self.enemy = self.scene_manager.add_object(model=player_model, pos=pos)
-        # self.player.transform.set_pos([0.0, -1.99, -11.0])
+
+        self.player.transform.set_pos([0.0, 5.0, 0.0])
         self.player.transform.set_yaw(3.141592)
-        self.player.transform.set_scale(0.45)
+        self.player.transform.set_scale(1.0)
         self.velocity[...] = Float3(0.0, 0.0, 0.0)
 
         # self.enemy.transform.set_pos([0.0, -1.99, -11.0])
@@ -74,7 +58,7 @@ class GameClient(Singleton):
         # self.enemy.transform.set_scale(0.45)
 
         # fix camera rotation
-        main_camera.transform.set_rotation((0.0, 1.57079, 0.0))
+        main_camera.transform.set_rotation((-HALF_PI, 0.0, 0.0))
 
     def exit(self):
         logger.info("GameClient::exit")
@@ -86,31 +70,38 @@ class GameClient(Singleton):
         btn_left, btn_middle, btn_right = self.game_backend.get_mouse_pressed()
         camera = self.scene_manager.main_camera
 
-        press_keys = 0
+        key_flag = KEY_FLAG.NONE
+        move_direction = MOVE_DIRECTION.NONE
 
         if keydown[Keyboard.W]:
-            press_keys |= KEY_FLAG_W
+            key_flag |= KEY_FLAG.MOVE
+            move_direction |= MOVE_DIRECTION.FORWARD
         elif keydown[Keyboard.S]:
-            press_keys |= KEY_FLAG_S
+            key_flag |= KEY_FLAG.MOVE
+            move_direction |= MOVE_DIRECTION.BACK
 
         if keydown[Keyboard.A]:
-            press_keys |= KEY_FLAG_A
+            key_flag |= KEY_FLAG.MOVE
+            move_direction |= MOVE_DIRECTION.LEFT
         elif keydown[Keyboard.D]:
-            press_keys |= KEY_FLAG_D
+            key_flag |= KEY_FLAG.MOVE
+            move_direction |= MOVE_DIRECTION.RIGHT
 
-        self.key_flag = KEY_FLAG.NONE
+        self.velocity[...] = 0.0
+        self.velocity[2] = -MOVE_SPEED
 
-        if press_keys in key_map:
-            self.key_flag |= KEY_FLAG.MOVE
+        if key_flag & KEY_FLAG.MOVE:
+            if move_direction & MOVE_DIRECTION.FORWARD:
+                self.velocity[2] = -MOVE_SPEED
+            elif move_direction & MOVE_DIRECTION.BACK:
+                self.velocity[2] = MOVE_SPEED
 
-        state = self.state_manager.get_state()
+            if move_direction & MOVE_DIRECTION.LEFT:
+                self.velocity[0] = -MOVE_SPEED
+            elif move_direction & MOVE_DIRECTION.RIGHT:
+                self.velocity[0] = MOVE_SPEED
 
-        if self.key_flag & KEY_FLAG.MOVE:
-            self.player.transform.set_yaw(key_map[press_keys])
-
-        if self.key_flag & KEY_FLAG.MOVE:
-            self.velocity[0] = self.player.transform.front[0] * MOVE_SPEED
-            self.velocity[2] = self.player.transform.front[2] * MOVE_SPEED
+            self.player.transform.set_yaw(rotation_key_map[move_direction])
 
         # self.velocity[1] -= GRAVITY * delta
 
@@ -151,12 +142,12 @@ class GameClient(Singleton):
         if self.on_ground:
             self.velocity[1] = 0.0
 
-        self.state_manager.update_state(delta, self.player, self.animation_meshes, self.on_ground, self.key_flag)
+        self.state_manager.update_state(delta, self.player, self.animation_meshes, self.on_ground, key_flag)
 
         self.player.transform.set_pos(player_pos)
         camera.transform.set_pos(player_pos)
         camera.transform.move_up(5.0)
-        camera.transform.move_front(10.0)
+        camera.transform.move_front(25.0)
 
     def update(self, delta):
         self.update_player(delta)

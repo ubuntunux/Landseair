@@ -8,10 +8,29 @@ class KEY_FLAG:
     MOVE = 1 << 0
 
 
+class MOVE_DIRECTION:
+    NONE = 0
+    FORWARD = 1 << 0
+    BACK = 1 << 1
+    LEFT = 1 << 2
+    RIGHT = 1 << 3
+
+
 class STATES:
     NONE = 0
     IDLE = 1
     MOVE = 2
+
+
+rotation_key_map = dict()
+rotation_key_map[MOVE_DIRECTION.FORWARD] = 3.141592
+rotation_key_map[MOVE_DIRECTION.BACK] = 0.0
+rotation_key_map[MOVE_DIRECTION.LEFT] = -1.57079
+rotation_key_map[MOVE_DIRECTION.RIGHT] = 1.57079
+rotation_key_map[MOVE_DIRECTION.FORWARD | MOVE_DIRECTION.LEFT] = 3.926987
+rotation_key_map[MOVE_DIRECTION.FORWARD | MOVE_DIRECTION.RIGHT] = 2.356191
+rotation_key_map[MOVE_DIRECTION.BACK | MOVE_DIRECTION.LEFT] = -0.785395
+rotation_key_map[MOVE_DIRECTION.BACK | MOVE_DIRECTION.RIGHT] = 0.785395
 
 
 class StateInfo:
@@ -58,7 +77,6 @@ class StateMove(StateBase):
     def on_update(self, state_info=None):
         if not (state_info.key_flag & KEY_FLAG.MOVE):
             self.state_manager.set_state(STATES.IDLE, state_info)
-
 
 
 class GameStateManager(StateMachine):
