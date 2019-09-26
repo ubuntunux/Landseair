@@ -3,11 +3,12 @@ import numpy as np
 
 from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger
-from PyEngine3D.Utilities import Singleton, StateMachine, StateItem, Float3, HALF_PI, PI, TWO_PI
+from PyEngine3D.Utilities import *
 from GameClient.GameState import *
 
 
 GRAVITY = 20.0
+SCROLL_SPEED = 10.0
 MOVE_SPEED = 6.0
 BOUND_BOX_OFFSET = 0.1
 EPSILON = sys.float_info.epsilon
@@ -88,21 +89,24 @@ class GameClient(Singleton):
             move_direction |= MOVE_DIRECTION.RIGHT
 
         self.velocity[...] = 0.0
-        self.velocity[2] = -MOVE_SPEED
+        self.velocity[2] = -SCROLL_SPEED
+        move_vector = Float3(0.0)
 
         if key_flag & KEY_FLAG.MOVE:
             if move_direction & MOVE_DIRECTION.FORWARD:
-                self.velocity[2] = -MOVE_SPEED
+                move_vector[2] = -1.0
             elif move_direction & MOVE_DIRECTION.BACK:
-                self.velocity[2] = MOVE_SPEED
+                move_vector[2] = 1.0
 
             if move_direction & MOVE_DIRECTION.LEFT:
-                self.velocity[0] = -MOVE_SPEED
+                move_vector[0] = -1.0
             elif move_direction & MOVE_DIRECTION.RIGHT:
-                self.velocity[0] = MOVE_SPEED
+                move_vector[0] = 1.0
 
-            self.player.transform.set_yaw(rotation_key_map[move_direction])
+            # set rotation
+            # self.player.transform.set_yaw(rotation_key_map[move_direction])
 
+        self.velocity += normalize(move_vector) * MOVE_SPEED
         # self.velocity[1] -= GRAVITY * delta
 
         old_player_pos = self.player.transform.get_pos().copy()
