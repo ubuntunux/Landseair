@@ -55,15 +55,18 @@ class GameClient(Singleton):
         self.player.transform.set_pos([0.0, 5.0, 0.0])
         self.player.transform.set_yaw(3.141592)
         self.player.transform.set_scale(1.0)
+        self.player.transform.euler_to_quaternion()
+        self.player.transform.set_use_quaternion(True)
+
         self.velocity[...] = Float3(0.0, 0.0, 0.0)
-        self.camera_distance = 10.0
 
         # self.enemy.transform.set_pos([0.0, -1.99, -11.0])
         # self.enemy.transform.set_yaw(3.141592)
         # self.enemy.transform.set_scale(0.45)
 
-        # fix camera rotation
-        main_camera.transform.set_rotation((-HALF_PI, 0.0, 0.0))
+        # camera
+        self.camera_distance = 10.0
+        main_camera.transform.set_rotation((-0.5, 0.0, 0.0))
 
     def exit(self):
         logger.info("GameClient::exit")
@@ -92,26 +95,29 @@ class GameClient(Singleton):
         rotation_speed = ROTATION_SPEED * delta_time
 
         # move key flags
+        ql = QUATERNION_IDENTITY.copy()
+        qf = QUATERNION_IDENTITY.copy()
+        qu = QUATERNION_IDENTITY.copy()
         if keydown[Keyboard.W]:
-            matrix_rotate_axis(player_transform.rotationMatrix, rotation_speed, *player_transform.left)
+            ql = get_quaternion(player_transform.left, rotation_speed)
         elif keydown[Keyboard.S]:
-            matrix_rotate_axis(player_transform.rotationMatrix, -rotation_speed, *player_transform.left)
+            ql = get_quaternion(player_transform.left, -rotation_speed)
 
         if keydown[Keyboard.A]:
-            matrix_rotate_axis(player_transform.rotationMatrix, -rotation_speed, *player_transform.front)
+            qf = get_quaternion(player_transform.front, -rotation_speed)
         elif keydown[Keyboard.D]:
-            matrix_rotate_axis(player_transform.rotationMatrix, rotation_speed, *player_transform.front)
+            qf = get_quaternion(player_transform.front, rotation_speed)
 
         if keydown[Keyboard.Z]:
-            matrix_rotate_axis(player_transform.rotationMatrix, rotation_speed, *player_transform.up)
+            qu = get_quaternion(player_transform.up, rotation_speed)
         elif keydown[Keyboard.C]:
-            matrix_rotate_axis(player_transform.rotationMatrix, -rotation_speed, *player_transform.up)
+            qu = get_quaternion(player_transform.up, -rotation_speed)
 
-        transform_matrix(player_transform.matrix, player_transform.pos, player_transform.rotationMatrix, player_transform.scale)
-        matrix_to_vectors(player_transform.rotationMatrix, player_transform.left, player_transform.up, player_transform.front)
+        quat = muliply_quaternions(ql, qf, qu)
+        player_transform.rotation_quaternion(quat)
 
         # move to forawd
-        self.velocity = player_transform.front * MOVE_SPEED
+        self.velocity = player_transform.front * (1.0 + (0.5 - player_transform.front[1] * 0.5)) * MOVE_SPEED
 
         old_player_pos = player_transform.get_pos().copy()
         move_delta = self.velocity * delta_time
