@@ -84,6 +84,7 @@ class GameClient(Singleton):
             camera_rotation_speed = camera.rotation_speed * delta_time
             camera.transform.rotation_pitch(mouse_delta[1] * camera_rotation_speed)
             camera.transform.rotation_yaw(-mouse_delta[0] * camera_rotation_speed)
+            camera.transform.update_transform()
 
         if keydown[Keyboard.Q]:
             self.camera_distance -= ZOOM_SPEED * delta_time
@@ -159,7 +160,7 @@ class GameClient(Singleton):
         self.state_manager.update_state(delta_time, self.player, self.animation_meshes, self.on_ground, key_flag)
 
         player_transform.set_pos(player_pos)
-        camera.transform.set_pos(player_pos + camera.transform.front * self.camera_distance)
+        camera.transform.set_pos(player_transform.get_pos() + camera.transform.front * self.camera_distance)
 
     def update(self, delta_time):
         self.update_player(delta_time)
