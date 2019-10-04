@@ -12,6 +12,7 @@ ZOOM_SPEED = 5.0
 SCROLL_SPEED = 10.0
 MOVE_SPEED = 10.0
 ROTATION_SPEED = 1.0
+BULLET_SPEED = 30.0
 BOUND_BOX_OFFSET = 0.1
 EPSILON = sys.float_info.epsilon
 
@@ -23,6 +24,8 @@ class GameClient(Singleton):
         self.resource_manager = None
         self.scene_manager = None
         self.player = None
+        self.bullet = None
+        self.fire_bullet = False
         self.enemy = None
         self.on_ground = False
         self.velocity = Float3(0.0, 0.0, 0.0)
@@ -49,7 +52,10 @@ class GameClient(Singleton):
         main_camera = self.scene_manager.main_camera
         pos = main_camera.transform.pos - main_camera.transform.front * 5.0
         player_model = self.resource_manager.get_model("Plane00")
+        bullet_model = self.resource_manager.get_model("Cube")
+
         self.player = self.scene_manager.add_object(model=player_model, pos=pos)
+        self.bullet = self.scene_manager.add_object(model=bullet_model, pos=pos)
         # self.enemy = self.scene_manager.add_object(model=player_model, pos=pos)
 
         self.player.transform.set_pos([0.0, 5.0, 0.0])
@@ -57,6 +63,8 @@ class GameClient(Singleton):
         self.player.transform.set_scale(1.0)
         self.player.transform.euler_to_quaternion()
         self.player.transform.set_use_quaternion(True)
+
+        self.bullet.transform.set_use_quaternion(True)
 
         self.velocity[...] = Float3(0.0, 0.0, 0.0)
 
@@ -71,6 +79,7 @@ class GameClient(Singleton):
     def exit(self):
         logger.info("GameClient::exit")
         self.scene_manager.delete_object(self.player.name)
+        self.scene_manager.delete_object(self.bullet.name)
 
     def update_player(self, delta_time):
         keydown = self.game_backend.get_keyboard_pressed()
@@ -78,6 +87,7 @@ class GameClient(Singleton):
         btn_left, btn_middle, btn_right = self.game_backend.get_mouse_pressed()
         camera = self.scene_manager.main_camera
         player_transform = self.player.transform
+        old_player_pos = player_transform.get_pos().copy()
 
         # camera rotation
         if btn_left or btn_right:
@@ -117,10 +127,21 @@ class GameClient(Singleton):
         quat = muliply_quaternions(ql, qf, qu)
         player_transform.rotation_quaternion(quat)
 
+        # fire bullet
+        if keydown[Keyboard.SPACE]:
+            self.fire_bullet = True
+            self.bullet.transform.set_pos(old_player_pos)
+            self.bullet.transform.set_quaternion(player_transform.get_quaternion())
+
+        if self.fire_bullet:
+            if length(self.bullet.transform.get_pos() - player_transform.get_pos()) < 10.0:
+                self.bullet.transform.move_front((BULLET_SPEED + MOVE_SPEED) * delta_time)
+            else:
+                self.fire_bullet = False
+
         # move to forawd
         self.velocity = player_transform.front * (1.0 + (0.5 - player_transform.front[1] * 0.5)) * MOVE_SPEED
 
-        old_player_pos = player_transform.get_pos().copy()
         move_delta = self.velocity * delta_time
         player_pos = old_player_pos + move_delta
 
