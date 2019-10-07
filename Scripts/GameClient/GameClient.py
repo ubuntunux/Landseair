@@ -83,7 +83,9 @@ class GameClient(Singleton):
 
     def update_player(self, delta_time):
         keydown = self.game_backend.get_keyboard_pressed()
+        keyup = self.game_backend.get_keyboard_released()
         mouse_delta = self.game_backend.mouse_delta
+        mouse_pos = self.game_backend.mouse_pos
         btn_left, btn_middle, btn_right = self.game_backend.get_mouse_pressed()
         camera = self.scene_manager.main_camera
         player_transform = self.player.transform
@@ -95,6 +97,10 @@ class GameClient(Singleton):
             camera.transform.rotation_pitch(mouse_delta[1] * camera_rotation_speed)
             camera.transform.rotation_yaw(-mouse_delta[0] * camera_rotation_speed)
             camera.transform.update_transform()
+
+        # toggle mouse grab mode
+        if keyup.get(Keyboard.TAB):
+            self.game_backend.toggle_mouse_grab()
 
         if keydown[Keyboard.Q]:
             self.camera_distance -= ZOOM_SPEED * delta_time
