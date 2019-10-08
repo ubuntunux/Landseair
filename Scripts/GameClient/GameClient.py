@@ -93,9 +93,8 @@ class GameClient(Singleton):
 
         # camera rotation
         if btn_left or btn_right:
-            camera_rotation_speed = camera.rotation_speed * delta_time
-            camera.transform.rotation_pitch(mouse_delta[1] * camera_rotation_speed)
-            camera.transform.rotation_yaw(-mouse_delta[0] * camera_rotation_speed)
+            camera.transform.rotation_pitch(mouse_delta[1] * camera.rotation_speed)
+            camera.transform.rotation_yaw(-mouse_delta[0] * camera.rotation_speed)
             camera.transform.update_transform()
 
         # toggle mouse grab mode
