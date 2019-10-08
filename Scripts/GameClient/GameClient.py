@@ -2,7 +2,7 @@ import sys
 import numpy as np
 
 from PyEngine3D.App.GameBackend import Keyboard
-from PyEngine3D.Common import logger
+from PyEngine3D.Common import logger, log_level, COMMAND
 from PyEngine3D.Utilities import *
 from GameClient.GameState import *
 
@@ -91,15 +91,17 @@ class GameClient(Singleton):
         player_transform = self.player.transform
         old_player_pos = player_transform.get_pos().copy()
 
+        if keyup.get(Keyboard.ESCAPE):
+            self.core_manager.request(COMMAND.STOP)
+        elif keyup.get(Keyboard.TAB):
+            # toggle mouse grab mode
+            self.game_backend.toggle_mouse_grab()
+
         # camera rotation
         if btn_left or btn_right:
             camera.transform.rotation_pitch(mouse_delta[1] * camera.rotation_speed)
             camera.transform.rotation_yaw(-mouse_delta[0] * camera.rotation_speed)
             camera.transform.update_transform()
-
-        # toggle mouse grab mode
-        if keyup.get(Keyboard.TAB):
-            self.game_backend.toggle_mouse_grab()
 
         if keydown[Keyboard.Q]:
             self.camera_distance -= ZOOM_SPEED * delta_time
@@ -114,15 +116,19 @@ class GameClient(Singleton):
         ql = QUATERNION_IDENTITY.copy()
         qf = QUATERNION_IDENTITY.copy()
         qu = QUATERNION_IDENTITY.copy()
+
         if keydown[Keyboard.W]:
-            ql = get_quaternion(player_transform.left, rotation_speed)
+            pass
         elif keydown[Keyboard.S]:
-            ql = get_quaternion(player_transform.left, -rotation_speed)
+            pass
 
         if keydown[Keyboard.A]:
-            qf = get_quaternion(player_transform.front, -rotation_speed)
+            pass
         elif keydown[Keyboard.D]:
-            qf = get_quaternion(player_transform.front, rotation_speed)
+            pass
+
+        ql = get_quaternion(player_transform.left, mouse_delta[1] * rotation_speed)
+        qf = get_quaternion(player_transform.front, mouse_delta[0] * rotation_speed)
 
         if keydown[Keyboard.Z]:
             qu = get_quaternion(player_transform.up, rotation_speed)
