@@ -75,7 +75,6 @@ class Player:
 
             quat = muliply_quaternions(ql, qf, qu)
             player_transform.rotation_quaternion(quat)
-            player_transform.update_transform()
 
             # fire bullet
             if keyup.get(Keyboard.SPACE):
