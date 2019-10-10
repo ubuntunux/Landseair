@@ -33,7 +33,13 @@ class Player:
     def get_pos(self):
         return self.player_object.transform.get_pos()
 
-    def update(self, delta_time, game_backend, scene_manager):
+    def update(self, delta_time, game_client):
+        game_backend = game_client.game_backend
+        scene_manager = game_client.scene_manager
+        screen_width = game_client.main_viewport.width
+        screen_height = game_client.main_viewport.height
+        crosshair = game_client.crosshair
+
         keydown = game_backend.get_keyboard_pressed()
         keyup = game_backend.get_keyboard_released()
         mouse_delta = game_backend.mouse_delta
@@ -62,11 +68,11 @@ class Player:
             elif keydown[Keyboard.D]:
                 pass
 
-            if 0.0 != mouse_delta[1]:
-                ql = get_quaternion(player_transform.left, mouse_delta[1] * rotation_speed)
+            speed_x = (crosshair.center_x / screen_width - 0.5) * 2.0
+            speed_y = (crosshair.center_y / screen_height - 0.5) * 2.0
 
-            if 0.0 != mouse_delta[0]:
-                qf = get_quaternion(player_transform.front, mouse_delta[0] * rotation_speed)
+            ql = get_quaternion(player_transform.left, rotation_speed * speed_y)
+            qf = get_quaternion(player_transform.front, rotation_speed * speed_x)
 
             if keydown[Keyboard.Z]:
                 qu = get_quaternion(player_transform.up, rotation_speed)

@@ -3,7 +3,9 @@ import numpy as np
 
 from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger, log_level, COMMAND
+from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
+
 from GameClient.GameState import *
 from GameClient.Player import Player
 from GameClient.Constants import *
@@ -15,6 +17,9 @@ class GameClient(Singleton):
         self.game_backend = None
         self.resource_manager = None
         self.scene_manager = None
+        self.viewport_manager = None
+        self.main_viewport = None
+        self.crosshair = None
         self.player = None
         self.camera_distance = 0.0
         self.animation_meshes = {}
@@ -27,6 +32,8 @@ class GameClient(Singleton):
         self.game_backend = core_manager.game_backend
         self.resource_manager = core_manager.resource_manager
         self.scene_manager = core_manager.scene_manager
+        self.viewport_manager = core_manager.viewport_manager
+        self.main_viewport = core_manager.viewport_manager.main_viewport
 
         self.resource_manager.open_scene('stage00')
 
@@ -41,10 +48,19 @@ class GameClient(Singleton):
         self.camera_distance = 10.0
         self.scene_manager.main_camera.transform.set_rotation((-0.5, 0.0, 0.0))
 
+        self.build_ui()
+
     def exit(self):
         logger.info("GameClient::exit")
         self.player.destroy(self.scene_manager)
         self.game_backend.set_mouse_grab(False)
+
+    def build_ui(self):
+        crosshair_texture = self.resource_manager.get_texture('crosshair')
+        self.crosshair = Widget(name="crosshair", width=100.0, height=100.0, texture=crosshair_texture)
+        self.crosshair.x = (self.main_viewport.width - self.crosshair.width) / 2
+        self.crosshair.y = (self.main_viewport.height - self.crosshair.height) / 2
+        self.main_viewport.add_widget(self.crosshair)
 
     def update_player(self, delta_time):
         keydown = self.game_backend.get_keyboard_pressed()
@@ -54,6 +70,13 @@ class GameClient(Singleton):
         btn_left, btn_middle, btn_right = self.game_backend.get_mouse_pressed()
         camera = self.scene_manager.main_camera
         is_mouse_grab = self.game_backend.get_mouse_grab()
+        screen_width = self.main_viewport.width
+        screen_height = self.main_viewport.height
+
+        # crosshair
+        crosshair_halfsize = self.crosshair.width / 2
+        self.crosshair.x = min(max(-crosshair_halfsize, self.crosshair.x + mouse_delta[0]), screen_width - crosshair_halfsize)
+        self.crosshair.y = min(max(-crosshair_halfsize, self.crosshair.y + mouse_delta[1]), screen_height - crosshair_halfsize)
 
         if keyup.get(Keyboard.ESCAPE):
             self.core_manager.request(COMMAND.STOP)
@@ -72,7 +95,7 @@ class GameClient(Singleton):
         elif keydown[Keyboard.E]:
             self.camera_distance += ZOOM_SPEED * delta_time
 
-        self.player.update(delta_time, self.game_backend, self.scene_manager)
+        self.player.update(delta_time, self)
 
         self.state_manager.update_state(delta_time)
 
