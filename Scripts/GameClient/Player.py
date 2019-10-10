@@ -79,8 +79,8 @@ class Player:
             elif keydown[Keyboard.C]:
                 qu = get_quaternion(player_transform.up, -rotation_speed)
 
-            quat = muliply_quaternions(ql, qf, qu)
-            player_transform.rotation_quaternion(quat)
+            # quat = muliply_quaternions(ql, qf, qu)
+            # player_transform.rotation_quaternion(quat)
 
             # fire bullet
             if keyup.get(Keyboard.SPACE):
@@ -94,8 +94,9 @@ class Player:
             else:
                 self.fire_bullet = False
 
-        # move to forawd
-        self.velocity[...] = player_transform.front * (1.0 + (0.5 - player_transform.front[1] * 0.5)) * MOVE_SPEED
+        # move to forward
+        forward_dir = -camera.transform.front
+        self.velocity[...] = forward_dir * (1.0 + (0.5 - forward_dir[1] * 0.5)) * MOVE_SPEED
 
         move_delta = self.velocity * delta_time
         player_pos = old_player_pos + move_delta
