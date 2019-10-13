@@ -46,12 +46,13 @@ class GameClient(Singleton):
         self.player = Player(self.scene_manager, self.resource_manager)
 
         self.camera_distance = 10.0
-        self.scene_manager.main_camera.transform.set_rotation((-0.5, 0.0, 0.0))
+        self.scene_manager.main_camera.transform.set_rotation((0.0, 0.0, 0.0))
 
         self.build_ui()
 
     def exit(self):
         logger.info("GameClient::exit")
+        self.clear_ui()
         self.player.destroy(self.scene_manager)
         self.game_backend.set_mouse_grab(False)
 
@@ -61,6 +62,10 @@ class GameClient(Singleton):
         self.crosshair.x = (self.main_viewport.width - self.crosshair.width) / 2
         self.crosshair.y = (self.main_viewport.height - self.crosshair.height) / 2
         self.main_viewport.add_widget(self.crosshair)
+
+    def clear_ui(self):
+        self.crosshair = None
+        self.main_viewport.clear_widgets()
 
     def update_player(self, delta_time):
         keydown = self.game_backend.get_keyboard_pressed()
@@ -76,8 +81,12 @@ class GameClient(Singleton):
 
         # crosshair
         crosshair_halfsize = self.crosshair.width / 2
-        self.crosshair.x = min(max(-crosshair_halfsize, self.crosshair.x + mouse_delta[0]), screen_width - crosshair_halfsize)
-        self.crosshair.y = min(max(-crosshair_halfsize, self.crosshair.y + mouse_delta[1]), screen_height - crosshair_halfsize)
+        if is_mouse_grab:
+            self.crosshair.x = min(max(-crosshair_halfsize, self.crosshair.x + mouse_delta[0]), screen_width - crosshair_halfsize)
+            self.crosshair.y = min(max(-crosshair_halfsize, self.crosshair.y + mouse_delta[1]), screen_height - crosshair_halfsize)
+        else:
+            self.crosshair.x = mouse_pos[0] - crosshair_halfsize
+            self.crosshair.y = mouse_pos[1] - crosshair_halfsize
 
         if keyup.get(Keyboard.ESCAPE):
             self.core_manager.request(COMMAND.STOP)

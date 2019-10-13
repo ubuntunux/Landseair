@@ -18,9 +18,8 @@ class Player:
         self.player_object.transform.set_yaw(3.141592)
         self.player_object.transform.set_scale(1.0)
         self.player_object.transform.euler_to_quaternion()
-        self.player_object.transform.set_use_quaternion(True)
-
-        self.bullet_object.transform.set_use_quaternion(True)
+        self.player_object.transform.set_use_quaternion(False)
+        self.bullet_object.transform.set_use_quaternion(False)
 
         self.fire_bullet = False
         self.on_ground = False
@@ -54,33 +53,38 @@ class Player:
         rotation_speed = ROTATION_SPEED * delta_time
         
         if is_mouse_grab:
-            ql = QUATERNION_IDENTITY.copy()
-            qf = QUATERNION_IDENTITY.copy()
-            qu = QUATERNION_IDENTITY.copy()
-
-            if keydown[Keyboard.W]:
-                pass
-            elif keydown[Keyboard.S]:
-                pass
-
-            if keydown[Keyboard.A]:
-                pass
-            elif keydown[Keyboard.D]:
-                pass
-
-            speed_x = (crosshair.center_x / screen_width - 0.5) * 2.0
-            speed_y = (crosshair.center_y / screen_height - 0.5) * 2.0
-
-            ql = get_quaternion(player_transform.left, rotation_speed * speed_y)
-            qf = get_quaternion(player_transform.front, rotation_speed * speed_x)
-
-            if keydown[Keyboard.Z]:
-                qu = get_quaternion(player_transform.up, rotation_speed)
-            elif keydown[Keyboard.C]:
-                qu = get_quaternion(player_transform.up, -rotation_speed)
-
+            # ql = QUATERNION_IDENTITY.copy()
+            # qf = QUATERNION_IDENTITY.copy()
+            # qu = QUATERNION_IDENTITY.copy()
+            #
+            # if keydown[Keyboard.W]:
+            #     pass
+            # elif keydown[Keyboard.S]:
+            #     pass
+            #
+            # if keydown[Keyboard.A]:
+            #     pass
+            # elif keydown[Keyboard.D]:
+            #     pass
+            #
+            # speed_x = (crosshair.center_x / screen_width - 0.5) * 2.0
+            # speed_y = (crosshair.center_y / screen_height - 0.5) * 2.0
+            #
+            # ql = get_quaternion(player_transform.left, rotation_speed * speed_y)
+            # qf = get_quaternion(player_transform.front, rotation_speed * speed_x)
+            #
+            # if keydown[Keyboard.Z]:
+            #     qu = get_quaternion(player_transform.up, rotation_speed)
+            # elif keydown[Keyboard.C]:
+            #     qu = get_quaternion(player_transform.up, -rotation_speed)
+            #
             # quat = muliply_quaternions(ql, qf, qu)
             # player_transform.rotation_quaternion(quat)
+
+            if camera.transform.use_quaternion:
+                player_transform.set_quaternion(camera.transform.get_quaternion())
+            else:
+                player_transform.set_rotation(camera.transform.get_rotation())
 
             # fire bullet
             if keyup.get(Keyboard.SPACE):
