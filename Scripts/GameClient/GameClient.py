@@ -20,6 +20,7 @@ class GameClient(Singleton):
         self.viewport_manager = None
         self.main_viewport = None
         self.crosshair = None
+        self.player_aim = None
         self.player = None
         self.camera_distance = 0.0
         self.animation_meshes = {}
@@ -45,8 +46,13 @@ class GameClient(Singleton):
 
         self.player = Player(self.scene_manager, self.resource_manager)
 
+        self.camera_pitch_delay = 0.0
+        self.camera_yaw_delay = 0.0
         self.camera_distance = 10.0
-        self.scene_manager.main_camera.transform.set_rotation((0.0, 0.0, 0.0))
+        main_camera = self.scene_manager.main_camera
+        main_camera.transform.set_use_quaternion(False)
+        main_camera.transform.set_rotation((0.0, 0.0, 0.0))
+        main_camera.transform.euler_to_quaternion()
 
         self.build_ui()
 
@@ -61,7 +67,14 @@ class GameClient(Singleton):
         self.crosshair = Widget(name="crosshair", width=100.0, height=100.0, texture=crosshair_texture)
         self.crosshair.x = (self.main_viewport.width - self.crosshair.width) / 2
         self.crosshair.y = (self.main_viewport.height - self.crosshair.height) / 2
+
+        self.player_aim = None
+        self.player_aim = Widget(name="player_aim", width=20.0, height=20.0, texture=crosshair_texture)
+        self.player_aim.x = (self.main_viewport.width - self.player_aim.width) / 2
+        self.player_aim.y = (self.main_viewport.height - self.player_aim.height) / 2
+
         self.main_viewport.add_widget(self.crosshair)
+        self.main_viewport.add_widget(self.player_aim)
 
     def clear_ui(self):
         self.crosshair = None
@@ -75,18 +88,25 @@ class GameClient(Singleton):
         btn_left, btn_middle, btn_right = self.game_backend.get_mouse_pressed()
         camera = self.scene_manager.main_camera
         camera_transform = camera.transform
+        player_transform = self.player.get_transform()
         is_mouse_grab = self.game_backend.get_mouse_grab()
         screen_width = self.main_viewport.width
         screen_height = self.main_viewport.height
 
         # crosshair
-        crosshair_halfsize = self.crosshair.width / 2
+        crosshair_half_width = self.crosshair.width / 2
+        crosshair_half_height = self.crosshair.height / 2
         if is_mouse_grab:
-            self.crosshair.x = min(max(-crosshair_halfsize, self.crosshair.x + mouse_delta[0]), screen_width - crosshair_halfsize)
-            self.crosshair.y = min(max(-crosshair_halfsize, self.crosshair.y + mouse_delta[1]), screen_height - crosshair_halfsize)
+            self.crosshair.x = min(max(-crosshair_half_width, self.crosshair.x + mouse_delta[0]), screen_width - crosshair_half_width)
+            self.crosshair.y = min(max(-crosshair_half_height, self.crosshair.y + mouse_delta[1]), screen_height - crosshair_half_height)
         else:
-            self.crosshair.x = mouse_pos[0] - crosshair_halfsize
-            self.crosshair.y = mouse_pos[1] - crosshair_halfsize
+            self.crosshair.x = mouse_pos[0] - crosshair_half_width
+            self.crosshair.y = mouse_pos[1] - crosshair_half_height
+
+        crosshair_x_ratio = ((self.crosshair.x + crosshair_half_width) / screen_width) * 2.0 - 1.0
+        crosshair_y_ratio = ((self.crosshair.y + crosshair_half_height) / screen_height) * 2.0 - 1.0
+        aim_x_diff_ratio = (self.crosshair.center_x - self.player_aim.center_x) / screen_width
+        aim_y_diff_ratio = (self.crosshair.center_y - self.player_aim.center_y) / screen_height
 
         if keyup.get(Keyboard.ESCAPE):
             self.core_manager.request(COMMAND.STOP)
@@ -101,38 +121,43 @@ class GameClient(Singleton):
                 camera_transform.rotation_yaw(-mouse_delta[0] * camera.rotation_speed)
                 camera_transform.update_transform()
         else:
-            rotation_speed = ROTATION_SPEED * delta_time
-            ratio_x = -1.0 if 0.0 <= camera_transform.up[1] else 1.0
-            speed_x = (self.crosshair.center_x / screen_width - 0.5) * 2.0
-            speed_y = (self.crosshair.center_y / screen_height - 0.5) * 2.0
-            camera_transform.rotation_pitch(rotation_speed * speed_y)
-            camera_transform.rotation_yaw(rotation_speed * speed_x * ratio_x)
-            camera_transform.update_transform()
+            if player_transform.use_quaternion:
+                camera_transform.set_quaternion(player_transform.get_quaternion())
+            else:
+                rotation = player_transform.get_rotation()
+                rotation[0] *= -1.0
+                rotation[1] += PI
 
-            # camera_transform.set_use_quaternion(True)
-            # rotation_speed = ROTATION_SPEED * delta_time
-            # speed_x = (self.crosshair.center_x / screen_width - 0.5) * 2.0
-            # speed_y = (self.crosshair.center_y / screen_height - 0.5) * 2.0
-            # ql = QUATERNION_IDENTITY.copy()
-            # qf = QUATERNION_IDENTITY.copy()
-            # qu = QUATERNION_IDENTITY.copy()
-            # ql = get_quaternion(camera_transform.left, rotation_speed * speed_y)
-            # # qf = get_quaternion(camera_transform.front, -rotation_speed * speed_x)
-            # qu = get_quaternion(Float3(0.0, 1.0, 0.0), -rotation_speed * speed_x)
-            # quat = muliply_quaternions(ql, qf, qu)
-            # camera_transform.rotation_quaternion(quat)
-            # camera_transform.update_transform()
+                rotation_delay_speed = 2.0
+                rotation_delay_limit = 0.3
+                self.camera_yaw_delay += aim_x_diff_ratio * rotation_delay_speed * delta_time
+                self.camera_yaw_delay = min(rotation_delay_limit, max(-rotation_delay_limit, self.camera_yaw_delay))
+                self.camera_pitch_delay += aim_y_diff_ratio * rotation_delay_speed * delta_time
+                self.camera_pitch_delay = min(rotation_delay_limit, max(-rotation_delay_limit, self.camera_pitch_delay))
+                rotation[0] -= self.camera_pitch_delay
+                rotation[1] += self.camera_yaw_delay
+
+                camera_transform.set_rotation(rotation)
 
         if keydown[Keyboard.Q]:
             self.camera_distance -= ZOOM_SPEED * delta_time
         elif keydown[Keyboard.E]:
             self.camera_distance += ZOOM_SPEED * delta_time
 
-        self.player.update(delta_time, self)
+        self.player.update(delta_time, self, aim_x_diff_ratio, aim_y_diff_ratio)
 
         self.state_manager.update_state(delta_time)
 
-        camera_transform.set_pos(self.player.get_pos() + camera_transform.front * self.camera_distance)
+        aim_pos = self.player.get_pos() + player_transform.front * 1000.0 - camera_transform.get_pos()
+        aim_pos = np.dot(Float4(*aim_pos, 0.0), camera.view_origin_projection)
+        aim_pos[0] = (aim_pos[0] / aim_pos[3]) * 0.5 + 0.5
+        aim_pos[1] = (aim_pos[1] / aim_pos[3]) * 0.5 + 0.5
+        self.player_aim.x = aim_pos[0] * screen_width - self.player_aim.width / 2
+        self.player_aim.y = aim_pos[1] * screen_height - self.player_aim.height / 2
+
+        camera_pos = self.player.get_pos() + camera_transform.front * self.camera_distance
+        camera_pos[1] += 2.5
+        camera_transform.set_pos(camera_pos)
 
     def update(self, delta_time):
         self.update_player(delta_time)

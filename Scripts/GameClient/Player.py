@@ -32,12 +32,16 @@ class Player:
     def get_pos(self):
         return self.player_object.transform.get_pos()
 
-    def update(self, delta_time, game_client):
+    def get_transform(self):
+        return self.player_object.transform
+
+    def update(self, delta_time, game_client, aim_x_diff_ratio, aim_y_diff_ratio):
         game_backend = game_client.game_backend
         scene_manager = game_client.scene_manager
         screen_width = game_client.main_viewport.width
         screen_height = game_client.main_viewport.height
         crosshair = game_client.crosshair
+        player_aim = game_client.player_aim
 
         keydown = game_backend.get_keyboard_pressed()
         keyup = game_backend.get_keyboard_released()
@@ -50,56 +54,43 @@ class Player:
         old_player_pos = player_transform.get_pos().copy()
         is_mouse_grab = game_backend.get_mouse_grab()
 
-        rotation_speed = ROTATION_SPEED * delta_time
-        
         if is_mouse_grab:
+            rotation_speed = ROTATION_SPEED * delta_time
+            ratio_x = -1.0 if 0.0 <= player_transform.up[1] else 1.0
+            player_transform.rotation_pitch(-rotation_speed * aim_y_diff_ratio)
+            player_transform.rotation_yaw(rotation_speed * aim_x_diff_ratio * ratio_x)
+            player_transform.update_transform()
+
+            # player_transform.set_use_quaternion(True)
+            # rotation_speed = ROTATION_SPEED * delta_time
+            # aim_x_diff_ratio = (crosshair.center_x / screen_width - 0.5) * 2.0
+            # aim_y_diff_ratio = (crosshair.center_y / screen_height - 0.5) * 2.0
             # ql = QUATERNION_IDENTITY.copy()
             # qf = QUATERNION_IDENTITY.copy()
             # qu = QUATERNION_IDENTITY.copy()
-            #
-            # if keydown[Keyboard.W]:
-            #     pass
-            # elif keydown[Keyboard.S]:
-            #     pass
-            #
-            # if keydown[Keyboard.A]:
-            #     pass
-            # elif keydown[Keyboard.D]:
-            #     pass
-            #
-            # speed_x = (crosshair.center_x / screen_width - 0.5) * 2.0
-            # speed_y = (crosshair.center_y / screen_height - 0.5) * 2.0
-            #
-            # ql = get_quaternion(player_transform.left, rotation_speed * speed_y)
-            # qf = get_quaternion(player_transform.front, rotation_speed * speed_x)
-            #
-            # if keydown[Keyboard.Z]:
-            #     qu = get_quaternion(player_transform.up, rotation_speed)
-            # elif keydown[Keyboard.C]:
-            #     qu = get_quaternion(player_transform.up, -rotation_speed)
-            #
+            # ql = get_quaternion(player_transform.left, rotation_speed * aim_y_diff_ratio)
+            # # qf = get_quaternion(player_transform.front, -rotation_speed * aim_x_diff_ratio)
+            # qu = get_quaternion(Float3(0.0, 1.0, 0.0), -rotation_speed * aim_x_diff_ratio)
             # quat = muliply_quaternions(ql, qf, qu)
             # player_transform.rotation_quaternion(quat)
+            # player_transform.update_transform()
 
-            if camera.transform.use_quaternion:
-                player_transform.set_quaternion(camera.transform.get_quaternion())
-            else:
-                player_transform.set_rotation(camera.transform.get_rotation())
-
-            # fire bullet
-            if keyup.get(Keyboard.SPACE):
-                self.fire_bullet = True
-                bullet_transform.set_pos(old_player_pos)
-                bullet_transform.set_quaternion(player_transform.get_quaternion())
+        # fire bullet
+        if btn_left or keyup.get(Keyboard.SPACE):
+            self.fire_bullet = True
+            bullet_transform.set_pos(old_player_pos)
+            bullet_transform.set_rotation(player_transform.get_rotation())
 
         if self.fire_bullet:
-            if length(bullet_transform.get_pos() - player_transform.get_pos()) < 10.0:
+            if length(bullet_transform.get_pos() - player_transform.get_pos()) < 1000.0:
                 bullet_transform.move_front((BULLET_SPEED + MOVE_SPEED) * delta_time)
             else:
                 self.fire_bullet = False
 
         # move to forward
-        forward_dir = -camera.transform.front
+        forward_dir = player_transform.front.copy()
+        forward_dir[1] = 0.0
+        forward_dir = normalize(forward_dir)
         self.velocity[...] = forward_dir * (1.0 + (0.5 - forward_dir[1] * 0.5)) * MOVE_SPEED
 
         move_delta = self.velocity * delta_time
