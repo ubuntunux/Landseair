@@ -128,12 +128,22 @@ class GameClient(Singleton):
                 rotation[0] *= -1.0
                 rotation[1] += PI
 
-                rotation_delay_speed = 2.0
-                rotation_delay_limit = 0.3
-                self.camera_yaw_delay += aim_x_diff_ratio * rotation_delay_speed * delta_time
-                self.camera_yaw_delay = min(rotation_delay_limit, max(-rotation_delay_limit, self.camera_yaw_delay))
-                self.camera_pitch_delay += aim_y_diff_ratio * rotation_delay_speed * delta_time
-                self.camera_pitch_delay = min(rotation_delay_limit, max(-rotation_delay_limit, self.camera_pitch_delay))
+                # rotation delay
+                # if -ROTATION_DELAY_SPEED_MIN < aim_x_diff_ratio < ROTATION_DELAY_SPEED_MIN:
+                #     rotation_delay_x = ROTATION_DELAY_SPEED_MIN * np.sign(aim_x_diff_ratio)
+                # else:
+                #     rotation_delay_x = aim_x_diff_ratio
+                # rotation_delay_x *= ROTATION_DELAY_SPEED * delta_time
+                # if np.sign(rotation_delay_x) != np.sign(self.camera_yaw_delay) and abs(self.camera_yaw_delay) < abs(rotation_delay_x):
+                #     pass
+                # elif 0.01 <= abs(aim_x_diff_ratio):
+                #     self.camera_yaw_delay += rotation_delay_x
+
+                self.camera_yaw_delay += aim_x_diff_ratio * ROTATION_DELAY_SPEED * delta_time
+                self.camera_yaw_delay = min(ROTATION_DELAY_LIMIT, max(-ROTATION_DELAY_LIMIT, self.camera_yaw_delay))
+
+                self.camera_pitch_delay += aim_y_diff_ratio * ROTATION_DELAY_SPEED * delta_time
+                self.camera_pitch_delay = min(ROTATION_DELAY_LIMIT, max(-ROTATION_DELAY_LIMIT, self.camera_pitch_delay))
                 rotation[0] -= self.camera_pitch_delay
                 rotation[1] += self.camera_yaw_delay
 
