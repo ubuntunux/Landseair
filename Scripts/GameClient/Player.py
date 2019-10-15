@@ -35,7 +35,7 @@ class Player:
     def get_transform(self):
         return self.player_object.transform
 
-    def update(self, delta_time, game_client, aim_x_diff_ratio, aim_y_diff_ratio):
+    def update(self, delta_time, game_client, aim_x_ratio, aim_y_ratio, aim_x_diff_ratio, aim_y_diff_ratio):
         game_backend = game_client.game_backend
         scene_manager = game_client.scene_manager
         screen_width = game_client.main_viewport.width
@@ -59,6 +59,7 @@ class Player:
             ratio_x = -1.0 if 0.0 <= player_transform.up[1] else 1.0
             player_transform.rotation_pitch(-rotation_speed * aim_y_diff_ratio)
             player_transform.rotation_yaw(rotation_speed * aim_x_diff_ratio * ratio_x)
+            player_transform.set_roll(ROLL_AMOUNT * (aim_x_ratio * 2.0 - 1.0))
             player_transform.update_transform()
 
             # player_transform.set_use_quaternion(True)

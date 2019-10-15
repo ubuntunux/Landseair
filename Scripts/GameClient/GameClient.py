@@ -92,6 +92,7 @@ class GameClient(Singleton):
         is_mouse_grab = self.game_backend.get_mouse_grab()
         screen_width = self.main_viewport.width
         screen_height = self.main_viewport.height
+        inv_view_origin_projection = np.dot(camera.inv_projection, camera.inv_view_origin)
 
         # crosshair
         crosshair_half_width = self.crosshair.width / 2
@@ -103,10 +104,12 @@ class GameClient(Singleton):
             self.crosshair.x = mouse_pos[0] - crosshair_half_width
             self.crosshair.y = mouse_pos[1] - crosshair_half_height
 
-        crosshair_x_ratio = ((self.crosshair.x + crosshair_half_width) / screen_width) * 2.0 - 1.0
-        crosshair_y_ratio = ((self.crosshair.y + crosshair_half_height) / screen_height) * 2.0 - 1.0
-        aim_x_diff_ratio = (self.crosshair.center_x - self.player_aim.center_x) / screen_width
-        aim_y_diff_ratio = (self.crosshair.center_y - self.player_aim.center_y) / screen_height
+        crosshair_x_ratio = (self.crosshair.x + crosshair_half_width) / screen_width
+        crosshair_y_ratio = (self.crosshair.y + crosshair_half_height) / screen_height
+        aim_x_ratio = (self.player_aim.x + self.player_aim.width / 2) / screen_width
+        aim_y_ratio = (self.player_aim.y + self.player_aim.height / 2) / screen_height
+        aim_x_diff_ratio = crosshair_x_ratio - aim_x_ratio
+        aim_y_diff_ratio = crosshair_y_ratio - aim_y_ratio
 
         if keyup.get(Keyboard.ESCAPE):
             self.core_manager.request(COMMAND.STOP)
@@ -124,26 +127,30 @@ class GameClient(Singleton):
             if player_transform.use_quaternion:
                 camera_transform.set_quaternion(player_transform.get_quaternion())
             else:
+                # TODO: Quaternion!!!!!!!!!!!!
+
                 rotation = player_transform.get_rotation()
                 rotation[0] *= -1.0
                 rotation[1] += PI
+                rotation[2] = 0.0
 
-                # rotation delay
-                # if -ROTATION_DELAY_SPEED_MIN < aim_x_diff_ratio < ROTATION_DELAY_SPEED_MIN:
-                #     rotation_delay_x = ROTATION_DELAY_SPEED_MIN * np.sign(aim_x_diff_ratio)
-                # else:
-                #     rotation_delay_x = aim_x_diff_ratio
-                # rotation_delay_x *= ROTATION_DELAY_SPEED * delta_time
-                # if np.sign(rotation_delay_x) != np.sign(self.camera_yaw_delay) and abs(self.camera_yaw_delay) < abs(rotation_delay_x):
-                #     pass
-                # elif 0.01 <= abs(aim_x_diff_ratio):
-                #     self.camera_yaw_delay += rotation_delay_x
+                # aim_pos = Float4(aim_x_ratio * 2.0 - 1.0, aim_y_ratio * 2.0 - 1.0, -1.0, 1.0)
+                # aim_pos = np.dot(aim_pos, inv_view_origin_projection)
+                # aim_pos[0:3] = normalize(aim_pos[0:3] / aim_pos[3])
+                # crosshair_pos = Float4(crosshair_x_ratio * 2.0 - 1.0, crosshair_y_ratio * 2.0 - 1.0, -1.0, 1.0)
+                # crosshair_pos = np.dot(crosshair_pos, inv_view_origin_projection)
+                # crosshair_pos[0:3] = normalize(crosshair_pos[0:3] / crosshair_pos[3])
+                # aim_pitch = clamp_radian(math.asin(aim_pos[1]))
+                # aim_yaw = clamp_radian(math.atan2(-aim_pos[0], -aim_pos[2]))
+                # crosshair_pitch = clamp_radian(math.asin(crosshair_pos[1]))
+                # crosshair_yaw = clamp_radian(math.atan2(-crosshair_pos[0], -crosshair_pos[2]))
 
-                self.camera_yaw_delay += aim_x_diff_ratio * ROTATION_DELAY_SPEED * delta_time
+                self.camera_yaw_delay += (np.power(abs(aim_x_diff_ratio), 0.5) * np.sign(aim_x_diff_ratio)) * ROTATION_DELAY_SPEED * delta_time
                 self.camera_yaw_delay = min(ROTATION_DELAY_LIMIT, max(-ROTATION_DELAY_LIMIT, self.camera_yaw_delay))
 
-                self.camera_pitch_delay += aim_y_diff_ratio * ROTATION_DELAY_SPEED * delta_time
+                self.camera_pitch_delay += (np.power(abs(aim_y_diff_ratio), 0.5) * np.sign(aim_y_diff_ratio)) * ROTATION_DELAY_SPEED * delta_time
                 self.camera_pitch_delay = min(ROTATION_DELAY_LIMIT, max(-ROTATION_DELAY_LIMIT, self.camera_pitch_delay))
+
                 rotation[0] -= self.camera_pitch_delay
                 rotation[1] += self.camera_yaw_delay
 
@@ -154,11 +161,11 @@ class GameClient(Singleton):
         elif keydown[Keyboard.E]:
             self.camera_distance += ZOOM_SPEED * delta_time
 
-        self.player.update(delta_time, self, aim_x_diff_ratio, aim_y_diff_ratio)
+        self.player.update(delta_time, self, aim_x_ratio, aim_y_ratio, aim_x_diff_ratio, aim_y_diff_ratio)
 
         self.state_manager.update_state(delta_time)
 
-        aim_pos = self.player.get_pos() + player_transform.front * 1000.0 - camera_transform.get_pos()
+        aim_pos = self.player.get_pos() + player_transform.front * AIM_DISTANCE - camera_transform.get_pos()
         aim_pos = np.dot(Float4(*aim_pos, 0.0), camera.view_origin_projection)
         aim_pos[0] = (aim_pos[0] / aim_pos[3]) * 0.5 + 0.5
         aim_pos[1] = (aim_pos[1] / aim_pos[3]) * 0.5 + 0.5
