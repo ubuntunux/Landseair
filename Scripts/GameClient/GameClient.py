@@ -127,23 +127,10 @@ class GameClient(Singleton):
             if player_transform.use_quaternion:
                 camera_transform.set_quaternion(player_transform.get_quaternion())
             else:
-                # TODO: Quaternion!!!!!!!!!!!!
-
                 rotation = player_transform.get_rotation()
-                rotation[0] *= -1.0
+                rotation[0] = 0.0
                 rotation[1] += PI
                 rotation[2] = 0.0
-
-                # aim_pos = Float4(aim_x_ratio * 2.0 - 1.0, aim_y_ratio * 2.0 - 1.0, -1.0, 1.0)
-                # aim_pos = np.dot(aim_pos, inv_view_origin_projection)
-                # aim_pos[0:3] = normalize(aim_pos[0:3] / aim_pos[3])
-                # crosshair_pos = Float4(crosshair_x_ratio * 2.0 - 1.0, crosshair_y_ratio * 2.0 - 1.0, -1.0, 1.0)
-                # crosshair_pos = np.dot(crosshair_pos, inv_view_origin_projection)
-                # crosshair_pos[0:3] = normalize(crosshair_pos[0:3] / crosshair_pos[3])
-                # aim_pitch = clamp_radian(math.asin(aim_pos[1]))
-                # aim_yaw = clamp_radian(math.atan2(-aim_pos[0], -aim_pos[2]))
-                # crosshair_pitch = clamp_radian(math.asin(crosshair_pos[1]))
-                # crosshair_yaw = clamp_radian(math.atan2(-crosshair_pos[0], -crosshair_pos[2]))
 
                 self.camera_yaw_delay += (np.power(abs(aim_x_diff_ratio), 0.5) * np.sign(aim_x_diff_ratio)) * ROTATION_DELAY_SPEED * delta_time
                 self.camera_yaw_delay = min(ROTATION_DELAY_LIMIT, max(-ROTATION_DELAY_LIMIT, self.camera_yaw_delay))
@@ -151,9 +138,8 @@ class GameClient(Singleton):
                 self.camera_pitch_delay += (np.power(abs(aim_y_diff_ratio), 0.5) * np.sign(aim_y_diff_ratio)) * ROTATION_DELAY_SPEED * delta_time
                 self.camera_pitch_delay = min(ROTATION_DELAY_LIMIT, max(-ROTATION_DELAY_LIMIT, self.camera_pitch_delay))
 
-                rotation[0] -= self.camera_pitch_delay
+                # rotation[0] += self.camera_pitch_delay
                 rotation[1] += self.camera_yaw_delay
-
                 camera_transform.set_rotation(rotation)
 
         if keydown[Keyboard.Q]:
@@ -173,7 +159,9 @@ class GameClient(Singleton):
         self.player_aim.y = aim_pos[1] * screen_height - self.player_aim.height / 2
 
         camera_pos = self.player.get_pos() + camera_transform.front * self.camera_distance
-        camera_pos[1] += 2.5
+        camera_pos += camera_transform.left * (aim_x_ratio * 2.0 - 1.0) * 12.0
+        camera_pos += camera_transform.up * (aim_y_ratio * 2.0 - 1.0) * 2.0
+        camera_pos[1] += 4.0
         camera_transform.set_pos(camera_pos)
 
     def update(self, delta_time):

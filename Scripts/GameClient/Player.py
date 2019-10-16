@@ -12,22 +12,28 @@ class Player:
         bullet_model = resource_manager.get_model("Cube")
 
         self.player_object = scene_manager.add_object(model=player_model, pos=pos)
-        self.bullet_object = scene_manager.add_object(model=bullet_model, pos=pos)
+        self.bullet_objects = []
+        self.fire_bullets = []
+        for i in range(100):
+            bullet_object = scene_manager.add_object(model=bullet_model, pos=pos)
+            self.bullet_objects.append(bullet_object)
 
         self.player_object.transform.set_pos([0.0, 5.0, 0.0])
         self.player_object.transform.set_yaw(3.141592)
         self.player_object.transform.set_scale(1.0)
-        self.player_object.transform.euler_to_quaternion()
-        self.player_object.transform.set_use_quaternion(False)
-        self.bullet_object.transform.set_use_quaternion(False)
+        self.acceleration = 10.0
+        # self.player_object.transform.euler_to_quaternion()
+        # self.player_object.transform.set_use_quaternion(False)
+        # self.bullet_object.transform.set_use_quaternion(False)
 
-        self.fire_bullet = False
+        self.fire_index = 0
         self.on_ground = False
         self.velocity = Float3(0.0, 0.0, 0.0)
 
     def destroy(self, scene_manager):
         scene_manager.delete_object(self.player_object.name)
-        scene_manager.delete_object(self.bullet_object.name)
+        for bullet_object in self.bullet_objects:
+            scene_manager.delete_object(bullet_object.name)
 
     def get_pos(self):
         return self.player_object.transform.get_pos()
@@ -49,7 +55,6 @@ class Player:
         mouse_pos = game_backend.mouse_pos
         btn_left, btn_middle, btn_right = game_backend.get_mouse_pressed()
         camera = scene_manager.main_camera
-        bullet_transform = self.bullet_object.transform
         player_transform = self.player_object.transform
         old_player_pos = player_transform.get_pos().copy()
         is_mouse_grab = game_backend.get_mouse_grab()
@@ -62,37 +67,17 @@ class Player:
             player_transform.set_roll(ROLL_AMOUNT * (aim_x_ratio * 2.0 - 1.0))
             player_transform.update_transform()
 
-            # player_transform.set_use_quaternion(True)
-            # rotation_speed = ROTATION_SPEED * delta_time
-            # aim_x_diff_ratio = (crosshair.center_x / screen_width - 0.5) * 2.0
-            # aim_y_diff_ratio = (crosshair.center_y / screen_height - 0.5) * 2.0
-            # ql = QUATERNION_IDENTITY.copy()
-            # qf = QUATERNION_IDENTITY.copy()
-            # qu = QUATERNION_IDENTITY.copy()
-            # ql = get_quaternion(player_transform.left, rotation_speed * aim_y_diff_ratio)
-            # # qf = get_quaternion(player_transform.front, -rotation_speed * aim_x_diff_ratio)
-            # qu = get_quaternion(Float3(0.0, 1.0, 0.0), -rotation_speed * aim_x_diff_ratio)
-            # quat = muliply_quaternions(ql, qf, qu)
-            # player_transform.rotation_quaternion(quat)
-            # player_transform.update_transform()
-
-        # fire bullet
-        if btn_left or keyup.get(Keyboard.SPACE):
-            self.fire_bullet = True
-            bullet_transform.set_pos(old_player_pos)
-            bullet_transform.set_rotation(player_transform.get_rotation())
-
-        if self.fire_bullet:
-            if length(bullet_transform.get_pos() - player_transform.get_pos()) < 1000.0:
-                bullet_transform.move_front((BULLET_SPEED + MOVE_SPEED) * delta_time)
-            else:
-                self.fire_bullet = False
-
         # move to forward
+        if keydown[Keyboard.Z]:
+            self.acceleration -= ACCELERATION * delta_time
+        elif keydown[Keyboard.C]:
+            self.acceleration += ACCELERATION * delta_time
+        self.acceleration = min(1.0, max(0.0, self.acceleration))
+
         forward_dir = player_transform.front.copy()
         forward_dir[1] = 0.0
         forward_dir = normalize(forward_dir)
-        self.velocity[...] = forward_dir * (1.0 + (0.5 - forward_dir[1] * 0.5)) * MOVE_SPEED
+        self.velocity[...] = forward_dir * self.acceleration * MOVE_SPEED
 
         move_delta = self.velocity * delta_time
         player_pos = old_player_pos + move_delta
@@ -134,4 +119,23 @@ class Player:
             self.velocity[1] = 0.0
 
         player_transform.set_pos(player_pos)
+
+        # fire bullet
+        if btn_left or keydown[Keyboard.SPACE]:
+            bullet = self.bullet_objects[self.fire_index]
+            self.fire_index = 0 if (len(self.bullet_objects) - 1) <= self.fire_index else (self.fire_index + 1)
+            bullet.transform.set_rotation(player_transform.get_rotation())
+            bullet.transform.update_transform()
+            bullet.transform.set_pos(player_pos + player_transform.front * 2.0)
+            self.fire_bullets.append(bullet)
+
+        dead_bullets = []
+        for fire_bullet in self.fire_bullets:
+            if length(fire_bullet.transform.get_pos() - player_pos) < 1000.0:
+                fire_bullet.transform.move_front((BULLET_SPEED + MOVE_SPEED) * delta_time)
+            else:
+                dead_bullets.append(fire_bullet)
+
+        for dead_bullet in dead_bullets:
+            self.fire_bullets.remove(dead_bullet)
 
