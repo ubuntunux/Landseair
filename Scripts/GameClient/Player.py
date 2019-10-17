@@ -21,7 +21,8 @@ class Player:
         self.player_object.transform.set_pos([0.0, 5.0, 0.0])
         self.player_object.transform.set_yaw(3.141592)
         self.player_object.transform.set_scale(1.0)
-        self.acceleration = 10.0
+        self.acceleration = 1.0
+        self.side_acceleration = 0.0
         # self.player_object.transform.euler_to_quaternion()
         # self.player_object.transform.set_use_quaternion(False)
         # self.bullet_object.transform.set_use_quaternion(False)
@@ -64,20 +65,34 @@ class Player:
             ratio_x = -1.0 if 0.0 <= player_transform.up[1] else 1.0
             player_transform.rotation_pitch(-rotation_speed * aim_y_diff_ratio)
             player_transform.rotation_yaw(rotation_speed * aim_x_diff_ratio * ratio_x)
-            player_transform.set_roll(ROLL_AMOUNT * (aim_x_ratio * 2.0 - 1.0))
+            player_transform.set_roll(ROLL_AMOUNT * ((aim_x_ratio * 2.0 - 1.0) - self.side_acceleration * 0.3))
             player_transform.update_transform()
 
-        # move to forward
-        if keydown[Keyboard.Z]:
-            self.acceleration -= ACCELERATION * delta_time
-        elif keydown[Keyboard.C]:
+        # move
+        if keydown[Keyboard.W]:
             self.acceleration += ACCELERATION * delta_time
-        self.acceleration = min(1.0, max(0.0, self.acceleration))
+        elif keydown[Keyboard.S]:
+            self.acceleration -= ACCELERATION * delta_time
+        self.acceleration = min(1.0, max(-0.5, self.acceleration))
+
+        if keydown[Keyboard.A]:
+            self.side_acceleration += SIDE_ACCELERATION * delta_time
+        elif keydown[Keyboard.D]:
+            self.side_acceleration -= SIDE_ACCELERATION * delta_time
+        else:
+            sign = np.sign(self.side_acceleration)
+            self.side_acceleration -= sign * SIDE_ACCELERATION * delta_time
+            if sign == self.side_acceleration:
+                self.side_acceleration = 0.0
+        self.side_acceleration = min(1.0, max(-1.0, self.side_acceleration))
 
         forward_dir = player_transform.front.copy()
+        side_dir = player_transform.left.copy()
         forward_dir[1] = 0.0
+        side_dir[1] = 0.0
         forward_dir = normalize(forward_dir)
-        self.velocity[...] = forward_dir * self.acceleration * MOVE_SPEED
+        side_dir = normalize(side_dir)
+        self.velocity[...] = forward_dir * self.acceleration * FORWARD_MOVE_SPEED + side_dir * self.side_acceleration * SIDE_MOVE_SPEED
 
         move_delta = self.velocity * delta_time
         player_pos = old_player_pos + move_delta
@@ -90,12 +105,9 @@ class Player:
 
             def is_in_plane(index, ratio):
                 if index == 1:
-                    return bound_box.bound_min[index] < (
-                                old_position[index] + move_delta[index] * ratio + BOUND_BOX_OFFSET) < bound_box.bound_max[
-                               index]
+                    return bound_box.bound_min[index] < (old_position[index] + move_delta[index] * ratio + BOUND_BOX_OFFSET) < bound_box.bound_max[index]
                 else:
-                    return bound_box.bound_min[index] < (old_position[index] + move_delta[index] * ratio) < \
-                           bound_box.bound_max[index]
+                    return bound_box.bound_min[index] < (old_position[index] + move_delta[index] * ratio) < bound_box.bound_max[index]
 
             if move_delta[i] < 0.0 and position[i] <= bound_box.bound_max[i] <= old_position[i]:
                 ratio = abs((bound_box.bound_max[i] - old_position[i]) / move_delta[i])
@@ -132,7 +144,7 @@ class Player:
         dead_bullets = []
         for fire_bullet in self.fire_bullets:
             if length(fire_bullet.transform.get_pos() - player_pos) < 1000.0:
-                fire_bullet.transform.move_front((BULLET_SPEED + MOVE_SPEED) * delta_time)
+                fire_bullet.transform.move_front((BULLET_SPEED + FORWARD_MOVE_SPEED) * delta_time)
             else:
                 dead_bullets.append(fire_bullet)
 

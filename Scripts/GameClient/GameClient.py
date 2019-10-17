@@ -159,9 +159,9 @@ class GameClient(Singleton):
         self.player_aim.y = aim_pos[1] * screen_height - self.player_aim.height / 2
 
         camera_pos = self.player.get_pos() + camera_transform.front * self.camera_distance
-        camera_pos += camera_transform.left * (aim_x_ratio * 2.0 - 1.0) * 12.0
-        camera_pos += camera_transform.up * (aim_y_ratio * 2.0 - 1.0) * 2.0
-        camera_pos[1] += 4.0
+        camera_pos += camera_transform.left * (aim_x_ratio * 2.0 - 1.0) * CAMERA_DELAY_WIDTH
+        camera_pos += camera_transform.up * (aim_y_ratio * 2.0 - 1.0) * CAMERA_DELAY_HEIGHT
+        camera_pos[1] += CAMERA_OFFSET_Y
         camera_transform.set_pos(camera_pos)
 
     def update(self, delta_time):
