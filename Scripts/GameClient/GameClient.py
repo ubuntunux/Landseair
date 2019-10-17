@@ -22,6 +22,7 @@ class GameClient(Singleton):
         self.crosshair = None
         self.player_aim = None
         self.player = None
+        self.enemies = None
         self.camera_distance = 0.0
         self.animation_meshes = {}
         self.state_manager = GameStateManager()
@@ -45,6 +46,7 @@ class GameClient(Singleton):
             self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00")
 
         self.player = Player(self.scene_manager, self.resource_manager)
+        self.enemies = Player(self.scene_manager, self.resource_manager)
 
         self.camera_pitch_delay = 0.0
         self.camera_yaw_delay = 0.0
@@ -60,6 +62,7 @@ class GameClient(Singleton):
         logger.info("GameClient::exit")
         self.clear_ui()
         self.player.destroy(self.scene_manager)
+        self.enemies.destroy(self.scene_manager)
         self.game_backend.set_mouse_grab(False)
 
     def build_ui(self):

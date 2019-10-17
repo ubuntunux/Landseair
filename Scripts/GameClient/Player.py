@@ -13,8 +13,9 @@ class Player:
 
         self.player_object = scene_manager.add_object(model=player_model, pos=pos)
         self.bullet_objects = []
+
         self.fire_bullets = []
-        for i in range(100):
+        for i in range(10):
             bullet_object = scene_manager.add_object(model=bullet_model, pos=pos)
             self.bullet_objects.append(bullet_object)
 
@@ -23,9 +24,6 @@ class Player:
         self.player_object.transform.set_scale(1.0)
         self.acceleration = 1.0
         self.side_acceleration = 0.0
-        # self.player_object.transform.euler_to_quaternion()
-        # self.player_object.transform.set_use_quaternion(False)
-        # self.bullet_object.transform.set_use_quaternion(False)
 
         self.fire_index = 0
         self.on_ground = False
@@ -150,4 +148,3 @@ class Player:
 
         for dead_bullet in dead_bullets:
             self.fire_bullets.remove(dead_bullet)
-
