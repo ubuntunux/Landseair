@@ -7,7 +7,7 @@ from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
 
 from GameClient.GameState import *
-from GameClient.Player import Player
+from GameClient.Player import PlayerActor
 from GameClient.Constants import *
 
 
@@ -45,8 +45,8 @@ class GameClient(Singleton):
             # self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00_" + key)
             self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00")
 
-        self.player = Player(self.scene_manager, self.resource_manager)
-        self.enemies = Player(self.scene_manager, self.resource_manager)
+        self.player = PlayerActor(self.scene_manager, self.resource_manager)
+        self.enemies = PlayerActor(self.scene_manager, self.resource_manager)
 
         self.camera_pitch_delay = 0.0
         self.camera_yaw_delay = 0.0
@@ -67,12 +67,13 @@ class GameClient(Singleton):
 
     def build_ui(self):
         crosshair_texture = self.resource_manager.get_texture('crosshair')
-        self.crosshair = Widget(name="crosshair", width=100.0, height=100.0, texture=crosshair_texture)
+        crosshair_box_texture = self.resource_manager.get_texture('crosshair_box')
+        self.crosshair = Widget(name="crosshair", width=50.0, height=50.0, texture=crosshair_box_texture)
         self.crosshair.x = (self.main_viewport.width - self.crosshair.width) / 2
         self.crosshair.y = (self.main_viewport.height - self.crosshair.height) / 2
 
         self.player_aim = None
-        self.player_aim = Widget(name="player_aim", width=20.0, height=20.0, texture=crosshair_texture)
+        self.player_aim = Widget(name="player_aim", width=40.0, height=40.0, texture=crosshair_texture)
         self.player_aim.x = (self.main_viewport.width - self.player_aim.width) / 2
         self.player_aim.y = (self.main_viewport.height - self.player_aim.height) / 2
 
