@@ -31,7 +31,7 @@ class PlayerActor:
     def get_transform(self):
         return self.player_object.transform
 
-    def update(self, delta_time, game_client, aim_x_ratio, aim_y_ratio, aim_x_diff_ratio, aim_y_diff_ratio):
+    def update(self, delta_time, game_client, crosshair_x_ratio, crosshair_y_ratio, aim_x_ratio, aim_y_ratio, goal_aim_pitch, goal_aim_yaw):
         game_backend = game_client.game_backend
         scene_manager = game_client.scene_manager
         screen_width = game_client.main_viewport.width
@@ -49,12 +49,64 @@ class PlayerActor:
         old_player_pos = player_transform.get_pos().copy()
         is_mouse_grab = game_backend.get_mouse_grab()
 
+        player_pitch = player_transform.get_pitch()
+        player_yaw = player_transform.get_yaw()
+        player_roll = player_transform.get_roll()
+
+        diff_pitch = (goal_aim_pitch - player_pitch)
+        if PI < diff_pitch or diff_pitch < -PI:
+            diff_pitch -= np.sign(diff_pitch) * TWO_PI
+
+        diff_yaw = (goal_aim_yaw - player_yaw)
+        if PI < diff_yaw or diff_yaw < -PI:
+            diff_yaw -= np.sign(diff_yaw) * TWO_PI
+
+        goal_player_roll = clamp_radian(ROTATION_ROLL_LIMIT * ((crosshair_x_ratio * 2.0 - 1.0) - self.side_acceleration * 0.3))
+        diff_roll = (goal_player_roll - player_roll)
+        if PI < diff_roll or diff_roll < -PI:
+            diff_roll -= np.sign(diff_roll) * TWO_PI
+
         if is_mouse_grab:
-            rotation_speed = ROTATION_SPEED * delta_time
-            ratio_x = -1.0 if 0.0 <= player_transform.up[1] else 1.0
-            player_transform.rotation_pitch(-rotation_speed * aim_y_diff_ratio)
-            player_transform.rotation_yaw(rotation_speed * aim_x_diff_ratio * ratio_x)
-            player_transform.set_roll(ROLL_AMOUNT * ((aim_x_ratio * 2.0 - 1.0) - self.side_acceleration * 0.3))
+            pitch_speed_ratio = abs(crosshair_y_ratio * 2.0 - 1.0)
+            yaw_speed_ratio = abs(crosshair_x_ratio * 2.0 - 1.0)
+            pitch_speed = pitch_speed_ratio * ROTATION_SPEED * delta_time
+            yaw_speed = yaw_speed_ratio * ROTATION_SPEED * delta_time
+            roll_speed = ROTATION_ROLL_SPEED * delta_time
+
+            # set pitch
+            if abs(diff_pitch) <= pitch_speed:
+                player_transform.set_pitch(goal_aim_pitch)
+            else:
+                player_transform.rotation_pitch(pitch_speed * np.sign(diff_pitch))
+
+            result_pitch = player_transform.get_pitch()
+
+            # pitch threashold
+            if PI * 1.5 < result_pitch < (TWO_PI - ROTATION_PITCH_LIMIT):
+                player_transform.set_pitch(TWO_PI - ROTATION_PITCH_LIMIT)
+            elif ROTATION_PITCH_LIMIT < result_pitch < PI * 0.5:
+                player_transform.set_pitch(ROTATION_PITCH_LIMIT)
+
+            # set yaw
+            if abs(diff_yaw) <= yaw_speed:
+                player_transform.set_yaw(goal_aim_yaw)
+            else:
+                player_transform.rotation_yaw(yaw_speed * np.sign(diff_yaw))
+
+            # set roll
+            if abs(diff_roll) <= roll_speed:
+                player_transform.set_roll(goal_player_roll)
+            else:
+                player_transform.rotation_roll(roll_speed * np.sign(diff_roll))
+
+            result_roll = player_transform.get_roll()
+
+            # roll threashold
+            if PI * 1.5 < result_roll < (TWO_PI - ROTATION_ROLL_LIMIT):
+                player_transform.set_roll(TWO_PI - ROTATION_ROLL_LIMIT)
+            elif ROTATION_PITCH_LIMIT < result_roll < PI * 0.5:
+                player_transform.set_roll(ROTATION_ROLL_LIMIT)
+
             player_transform.update_transform()
 
         # move
