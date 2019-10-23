@@ -7,7 +7,7 @@ from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
 
 from GameClient.GameState import *
-from GameClient.Player import PlayerActor
+from GameClient.Actor import PlayerActor, ShipActor
 from GameClient.Constants import *
 
 
@@ -22,7 +22,7 @@ class GameClient(Singleton):
         self.crosshair = None
         self.player_aim = None
         self.player = None
-        self.enemies = None
+        self.actors = []
         self.camera_distance = 0.0
         self.animation_meshes = {}
         self.state_manager = GameStateManager()
@@ -45,8 +45,15 @@ class GameClient(Singleton):
             # self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00_" + key)
             self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00")
 
-        self.player = PlayerActor(self.scene_manager, self.resource_manager)
-        self.enemies = PlayerActor(self.scene_manager, self.resource_manager)
+        self.player = PlayerActor(self.scene_manager, self.resource_manager, actor_model="Plane00", pos=Float3(0.0, 5.0, 0.0), rotation=PI, scale=1.0)
+
+        count = 10
+        for i in range(count):
+            pos = np.random.rand(3) * Float3(100.0, 10.0, 100.0)
+            pos[1] += 5.0
+            rotation = np.random.rand() * TWO_PI
+            actor = ShipActor(self.scene_manager, self.resource_manager,  actor_model="Plane00", pos=pos, rotation=rotation)
+            self.actors.append(actor)
 
         self.camera_pitch_delay = 0.0
         self.camera_yaw_delay = 0.0
@@ -60,11 +67,15 @@ class GameClient(Singleton):
 
         self.build_ui()
 
+    def destroy_actor(self, actor):
+        actor.destroy(self.scene_manager)
+
     def exit(self):
         logger.info("GameClient::exit")
         self.clear_ui()
-        self.player.destroy(self.scene_manager)
-        self.enemies.destroy(self.scene_manager)
+        self.destroy_actor(self.player)
+        for actor in self.actors:
+            self.destroy_actor(actor)
         self.game_backend.set_mouse_grab(False)
 
     def build_ui(self):
@@ -149,15 +160,6 @@ class GameClient(Singleton):
                 rotation[0] = -rotation[0]
                 rotation[1] += PI
                 rotation[2] = 0.0
-
-                # self.camera_pitch_delay += (np.power(abs(aim_y_diff_ratio), 0.5) * np.sign(aim_y_diff_ratio)) * ROTATION_DELAY_SPEED * delta_time
-                # self.camera_pitch_delay = min(ROTATION_DELAY_LIMIT, max(-ROTATION_DELAY_LIMIT, self.camera_pitch_delay))
-                # rotation[0] = self.camera_pitch_delay
-
-                # self.camera_yaw_delay += (np.power(abs(aim_x_diff_ratio), 0.5) * np.sign(aim_x_diff_ratio)) * ROTATION_DELAY_SPEED * delta_time
-                # self.camera_yaw_delay = min(ROTATION_DELAY_LIMIT, max(-ROTATION_DELAY_LIMIT, self.camera_yaw_delay))
-                # rotation[1] += self.camera_yaw_delay
-
                 camera_transform.set_rotation(rotation)
 
         if keydown[Keyboard.Q]:
@@ -165,9 +167,8 @@ class GameClient(Singleton):
         elif keydown[Keyboard.E]:
             self.camera_distance += ZOOM_SPEED * delta_time
 
-        self.player.update(delta_time, self, crosshair_x_ratio, crosshair_y_ratio, aim_x_ratio, aim_y_ratio, goal_aim_pitch, goal_aim_yaw)
-
-        self.state_manager.update_state(delta_time)
+        # update player
+        self.player.update_player(self, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw)
 
         aim_pos = self.player.get_pos() + player_transform.front * AIM_DISTANCE - camera_transform.get_pos()
         aim_pos = np.dot(Float4(*aim_pos, 0.0), camera.view_origin_projection)
@@ -205,5 +206,22 @@ class GameClient(Singleton):
         camera_pos[1] += CAMERA_OFFSET_Y
         camera_transform.set_pos(camera_pos)
 
+    def update_actors(self, delta_time):
+        actor_count = len(self.actors)
+        dead_count = 0
+        index = 0
+        for i in range(actor_count):
+            actor = self.actors[index]
+            actor.update_actor(self, delta_time)
+            if self.player.bullet_actor.check_collide(actor):
+                dead_count += 1
+                last_index = actor_count - dead_count
+                self.actors[index], self.actors[last_index] = self.actors[last_index], self.actors[index]
+                self.destroy_actor(actor)
+            else:
+                index += 1
+
     def update(self, delta_time):
         self.update_player(delta_time)
+        self.update_actors(delta_time)
+        self.state_manager.update_state(delta_time)
