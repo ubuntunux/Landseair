@@ -37,12 +37,20 @@ class BulletActor:
     def get_transform(self):
         return self.bullet_object.transform
 
+    def destroy_bullet(self, index):
+        if index < self.bullet_count:
+            last_index = self.bullet_count - 1
+            if 0 < last_index:
+                self.bullet_transforms[index], self.bullet_transforms[last_index] = self.bullet_transforms[last_index], self.bullet_transforms[index]
+            self.bullet_count = last_index
+            self.bullet_object.set_instance_render_count(self.bullet_count)
+
     def check_collide(self, actor):
-        actor_radius = actor.actor_object.bound_box.radius * 1.5
-        actor_center = actor.actor_object.bound_box.bound_center
         for i in range(self.bullet_count):
             bullet_pos = self.bullet_transforms[i].get_pos()
-            if np.all(np.abs(actor_center - bullet_pos) < actor_radius):
+            # TODO : check_collide_line
+            if actor.actor_object.bound_box.check_collide(bullet_pos, scale=1.5):
+                self.destroy_bullet(i)
                 return True
         return False
 
@@ -60,7 +68,6 @@ class BulletActor:
         actor_pos = actor_transform.get_pos()
         self.bullet_object.transform.set_pos(actor_pos)
 
-        dead_count = 0
         bullet_index = 0
         for i in range(self.bullet_count):
             bullet_transform = self.bullet_transforms[bullet_index]
@@ -71,11 +78,6 @@ class BulletActor:
                 matrix_translate(self.bullet_object.instance_matrix[i], *(-actor_pos))
                 bullet_index += 1
             else:
-                dead_count += 1
-                last_index = self.bullet_count - dead_count
-                self.bullet_transforms[bullet_index], self.bullet_transforms[last_index] = self.bullet_transforms[last_index], self.bullet_transforms[bullet_index]
-
-        self.bullet_count -= dead_count
-        self.bullet_object.set_instance_render_count(self.bullet_count)
+                self.destroy_bullet(bullet_index)
         if 0.0 < self.current_fire_term:
             self.current_fire_term -= delta_time

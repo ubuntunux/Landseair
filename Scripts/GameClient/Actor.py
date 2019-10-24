@@ -7,15 +7,17 @@ from GameClient.Constants import *
 
 
 class ShipActor:
+    isPlayer = False
+
     def __init__(self, scene_manager, resource_manager, actor_model, pos=Float3(0.0), rotation=0.0, scale=1.0):
         actor_model = resource_manager.get_model(actor_model)
 
         self.actor_object = scene_manager.add_object(model=actor_model)
-        self.bullet_actor = BulletActor(scene_manager, resource_manager)
-
         self.actor_object.transform.set_pos(pos)
         self.actor_object.transform.set_yaw(rotation)
         self.actor_object.transform.set_scale(scale)
+
+        self.bullet_actor = BulletActor(scene_manager, resource_manager)
 
         self.acceleration = 1.0
         self.side_acceleration = 0.0
@@ -35,6 +37,8 @@ class ShipActor:
 
 
 class PlayerActor(ShipActor):
+    isPlayer = True
+
     def update_player(self, game_client, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw):
         game_backend = game_client.game_backend
         keydown = game_backend.get_keyboard_pressed()

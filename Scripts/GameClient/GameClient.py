@@ -47,7 +47,7 @@ class GameClient(Singleton):
 
         self.player = PlayerActor(self.scene_manager, self.resource_manager, actor_model="Plane00", pos=Float3(0.0, 5.0, 0.0), rotation=PI, scale=1.0)
 
-        count = 10
+        count = 100
         for i in range(count):
             pos = np.random.rand(3) * Float3(100.0, 10.0, 100.0)
             pos[1] += 5.0
@@ -208,16 +208,13 @@ class GameClient(Singleton):
 
     def update_actors(self, delta_time):
         actor_count = len(self.actors)
-        dead_count = 0
         index = 0
         for i in range(actor_count):
             actor = self.actors[index]
             actor.update_actor(self, delta_time)
             if self.player.bullet_actor.check_collide(actor):
-                dead_count += 1
-                last_index = actor_count - dead_count
-                self.actors[index], self.actors[last_index] = self.actors[last_index], self.actors[index]
                 self.destroy_actor(actor)
+                self.actors.pop(index)
             else:
                 index += 1
 
