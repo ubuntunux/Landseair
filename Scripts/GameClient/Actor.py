@@ -143,6 +143,7 @@ class PlayerActor(ShipActor):
         actor_transform.set_pos(actor_pos)
 
         if btn_left or keydown[Keyboard.SPACE]:
-            self.bullet_actor.fire(actor_transform)
+            camera_transform = game_client.scene_manager.main_camera.transform
+            self.bullet_actor.fire(actor_transform, camera_transform, game_client.target_actor_distance)
 
         self.bullet_actor.update(delta_time, actor_transform)

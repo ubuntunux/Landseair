@@ -22,6 +22,8 @@ class GameClient(Singleton):
         self.crosshair = None
         self.player_aim = None
         self.player = None
+        self.target_actor = None
+        self.target_actor_distance = 0.0
         self.actors = []
         self.camera_distance = 0.0
         self.animation_meshes = {}
@@ -47,7 +49,7 @@ class GameClient(Singleton):
 
         self.player = PlayerActor(self.scene_manager, self.resource_manager, actor_model="Plane00", pos=Float3(0.0, 5.0, 0.0), rotation=PI, scale=1.0)
 
-        count = 100
+        count = 30
         for i in range(count):
             pos = np.random.rand(3) * Float3(100.0, 10.0, 100.0)
             pos[1] += 5.0
@@ -207,6 +209,15 @@ class GameClient(Singleton):
         camera_transform.set_pos(camera_pos)
 
     def update_actors(self, delta_time):
+        camera_transform = self.scene_manager.main_camera.transform
+        camera_pos = camera_transform.get_pos()
+        aim_dir = -camera_transform.front
+        player_pos  = self.player.get_pos()
+
+        self.target_actor = None
+        self.target_actor_distance = 0.0
+        target_angle = TWO_PI
+        target_dist = 10000000.0
         actor_count = len(self.actors)
         index = 0
         for i in range(actor_count):
@@ -217,6 +228,18 @@ class GameClient(Singleton):
                 self.actors.pop(index)
             else:
                 index += 1
+                to_actor = actor.get_pos() - camera_pos
+                d = np.dot(aim_dir, to_actor)
+                if 0.0 < d:
+                    c = to_actor - aim_dir * d
+                    angle = math.atan2(length(c), d)
+                    if angle < target_angle and angle < AIM_ANGLE_THRESHOLD:
+                        dist = length(actor.get_pos() - camera_pos)
+                        if dist < target_dist:
+                            target_angle = angle
+                            target_dist = dist
+                            self.target_actor = actor
+                            self.target_actor_distance = dist
 
     def update(self, delta_time):
         self.update_player(delta_time)
