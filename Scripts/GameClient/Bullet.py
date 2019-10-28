@@ -11,7 +11,7 @@ class BulletActor:
     fire_offset = 2.0
     fire_term = 0.3
     max_distance = 100.0
-    bullet_speed = 100.0
+    bullet_speed = 1000.0
     max_bullet_count = max(2, int(math.ceil((bullet_speed / max_distance) / fire_term)))
 
     def __init__(self, scene_manager, resource_manager):
@@ -46,10 +46,18 @@ class BulletActor:
             self.bullet_object.set_instance_render_count(self.bullet_count)
 
     def check_collide(self, actor):
+        bound_box = actor.actor_object.bound_box
+        bound_box_pos = bound_box.bound_center
+
         for i in range(self.bullet_count):
-            bullet_pos = self.bullet_transforms[i].get_pos()
-            # TODO : check_collide_line
-            if actor.actor_object.bound_box.check_collide(bullet_pos, scale=1.5):
+            bullet_pos0 = self.bullet_transforms[i].get_prev_pos()
+            bullet_pos1 = self.bullet_transforms[i].get_pos()
+            bullet_delta = bullet_pos1 - bullet_pos0
+            bullet_dir = normalize(bullet_delta)
+            to_actor = bound_box_pos - bullet_pos0
+            d = length(to_actor - np.dot(bullet_dir, to_actor) * bullet_dir)
+
+            if d <= bound_box.radius:
                 self.destroy_bullet(i)
                 return True
         return False
@@ -72,6 +80,7 @@ class BulletActor:
             bullet_transform.rotationMatrix[1][:3] = matrix[1][:3]
             bullet_transform.rotationMatrix[2][:3] = matrix[2][:3]
             bullet_transform.matrix_to_vectors()
+            bullet_transform.set_prev_pos(actor_position)
             bullet_transform.set_pos(bullet_position)
             bullet_transform.update_transform()
             self.bullet_object.set_instance_render_count(self.bullet_count)
