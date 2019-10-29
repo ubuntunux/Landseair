@@ -7,11 +7,12 @@ from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
 
 from GameClient.GameState import *
-from GameClient.Actor import PlayerActor, ShipActor
+from GameClient.Actor import ActorManager
+from GameClient.Bullet import BulletManager
 from GameClient.Constants import *
 
 
-class GameClient(Singleton):
+class GameClient:
     def __init__(self):
         self.core_manager = None
         self.game_backend = None
@@ -19,12 +20,12 @@ class GameClient(Singleton):
         self.scene_manager = None
         self.viewport_manager = None
         self.main_viewport = None
+        self.actor_manager = None
+        self.bullet_manager = None
         self.crosshair = None
         self.player_aim = None
-        self.player = None
         self.target_actor = None
         self.target_actor_distance = 0.0
-        self.actors = []
         self.camera_distance = 0.0
         self.animation_meshes = {}
         self.state_manager = GameStateManager()
@@ -38,24 +39,11 @@ class GameClient(Singleton):
         self.scene_manager = core_manager.scene_manager
         self.viewport_manager = core_manager.viewport_manager
         self.main_viewport = core_manager.viewport_manager.main_viewport
+        self.actor_manager = ActorManager()
+        self.bullet_manager = BulletManager()
 
-        self.resource_manager.open_scene('stage00')
-
-        animation_list = ['idle']
-
-        for key in animation_list:
-            # self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00_" + key)
-            self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00")
-
-        self.player = PlayerActor(self.scene_manager, self.resource_manager, actor_model="Plane00", pos=Float3(0.0, 5.0, 0.0), rotation=PI, scale=1.0)
-
-        count = 30
-        for i in range(count):
-            pos = np.random.rand(3) * Float3(100.0, 10.0, 100.0)
-            pos[1] += 5.0
-            rotation = np.random.rand() * TWO_PI
-            actor = ShipActor(self.scene_manager, self.resource_manager,  actor_model="Plane00", pos=pos, rotation=rotation)
-            self.actors.append(actor)
+        self.actor_manager.initialize(self.scene_manager, self.resource_manager)
+        self.bullet_manager.initialize(self.scene_manager, self.resource_manager)
 
         self.camera_pitch_delay = 0.0
         self.camera_yaw_delay = 0.0
@@ -69,15 +57,13 @@ class GameClient(Singleton):
 
         self.build_ui()
 
-    def destroy_actor(self, actor):
-        actor.destroy(self.scene_manager)
+        self.resource_manager.open_scene('stage00')
 
     def exit(self):
         logger.info("GameClient::exit")
         self.clear_ui()
-        self.destroy_actor(self.player)
-        for actor in self.actors:
-            self.destroy_actor(actor)
+        self.actor_manager.destroy()
+        self.bullet_manager.destroy()
         self.game_backend.set_mouse_grab(False)
 
     def build_ui(self):
@@ -107,11 +93,14 @@ class GameClient(Singleton):
         btn_left, btn_middle, btn_right = self.game_backend.get_mouse_pressed()
         camera = self.scene_manager.main_camera
         camera_transform = camera.transform
-        player_transform = self.player.get_transform()
         is_mouse_grab = self.game_backend.get_mouse_grab()
         screen_width = self.main_viewport.width
         screen_height = self.main_viewport.height
         inv_view_origin_projection = np.dot(camera.inv_projection, camera.inv_view_origin)
+
+        player_actor = self.actor_manager.player_actor
+        player_transform = player_actor.get_transform()
+        bullet_actor = self.bullet_manager.bullet_actor
 
         # crosshair
         crosshair_half_width = self.crosshair.width / 2
@@ -170,16 +159,20 @@ class GameClient(Singleton):
             self.camera_distance += ZOOM_SPEED * delta_time
 
         # update player
-        self.player.update_player(self, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw)
+        player_actor.update_player(self, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw)
 
-        aim_pos = self.player.get_pos() + player_transform.front * AIM_DISTANCE - camera_transform.get_pos()
+        # fire
+        if btn_left or keydown[Keyboard.SPACE]:
+            bullet_actor.fire(player_transform, camera_transform, self.target_actor_distance)
+
+        aim_pos = player_actor.get_pos() + player_transform.front * AIM_DISTANCE - camera_transform.get_pos()
         aim_pos = np.dot(Float4(*aim_pos, 0.0), camera.view_origin_projection)
         aim_pos[0] = (aim_pos[0] / aim_pos[3]) * 0.5 + 0.5
         aim_pos[1] = (aim_pos[1] / aim_pos[3]) * 0.5 + 0.5
         self.player_aim.x = aim_pos[0] * screen_width - self.player_aim.width / 2
         self.player_aim.y = aim_pos[1] * screen_height - self.player_aim.height / 2
 
-        camera_pos = self.player.get_pos() + camera_transform.front * self.camera_distance
+        camera_pos = player_actor.get_pos() + camera_transform.front * self.camera_distance
 
         camera_offset_speed = CAMERA_OFFSET_SPEED * delta_time
 
@@ -208,26 +201,21 @@ class GameClient(Singleton):
         camera_pos[1] += CAMERA_OFFSET_Y
         camera_transform.set_pos(camera_pos)
 
-    def update_actors(self, delta_time):
+    def find_target_actor(self):
         camera_transform = self.scene_manager.main_camera.transform
         camera_pos = camera_transform.get_pos()
         aim_dir = -camera_transform.front
-        player_pos  = self.player.get_pos()
+        bullet_actor = self.bullet_manager.bullet_actor
 
         self.target_actor = None
         self.target_actor_distance = 0.0
         target_angle = TWO_PI
         target_dist = 10000000.0
-        actor_count = len(self.actors)
-        index = 0
-        for i in range(actor_count):
-            actor = self.actors[index]
-            actor.update_actor(self, delta_time)
-            if self.player.bullet_actor.check_collide(actor):
-                self.destroy_actor(actor)
-                self.actors.pop(index)
+
+        for actor in self.actor_manager.actors:
+            if bullet_actor.check_collide(actor):
+                actor.set_dead()
             else:
-                index += 1
                 to_actor = actor.get_pos() - camera_pos
                 d = np.dot(aim_dir, to_actor)
                 if 0.0 < d:
@@ -243,5 +231,7 @@ class GameClient(Singleton):
 
     def update(self, delta_time):
         self.update_player(delta_time)
-        self.update_actors(delta_time)
+        self.actor_manager.update_actors(delta_time)
+        self.bullet_manager.update_bullets(delta_time, self.actor_manager.player_actor.get_pos())
+        self.find_target_actor()
         self.state_manager.update_state(delta_time)

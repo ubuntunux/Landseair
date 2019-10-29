@@ -16,7 +16,9 @@ class ScriptManager(Singleton):
         self.game_client.initialize(core_manager)
 
     def exit(self):
-        self.game_client.exit()
+        if self.game_client is not None:
+            self.game_client.exit()
+        self.game_client = None
 
     def update(self, delta):
         self.game_client.update(delta)

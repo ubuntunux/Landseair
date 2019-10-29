@@ -7,6 +7,25 @@ from PyEngine3D.Common import logger, log_level, COMMAND
 from GameClient.Constants import *
 
 
+class BulletManager:
+    def __init__(self):
+        self.scene_manager = None
+        self.resource_manager = None
+        self.bullet_actor = None
+
+    def initialize(self, scene_manager, resource_manager):
+        self.scene_manager = scene_manager
+        self.resource_manager = resource_manager
+        self.bullet_actor = BulletActor(scene_manager, resource_manager)
+
+    def destroy(self):
+        self.bullet_actor.destroy(self.scene_manager)
+        self.bullet_actor = None
+
+    def update_bullets(self, delta_time, player_actor_position):
+        self.bullet_actor.update_bullet(delta_time, player_actor_position)
+
+
 class BulletActor:
     fire_offset = 2.0
     fire_term = 0.3
@@ -57,7 +76,7 @@ class BulletActor:
             to_actor = bound_box_pos - bullet_pos0
             d = length(to_actor - np.dot(bullet_dir, to_actor) * bullet_dir)
 
-            if d <= bound_box.radius:
+            if d <= bound_box.radius * 0.5:
                 self.destroy_bullet(i)
                 return True
         return False
@@ -86,18 +105,17 @@ class BulletActor:
             self.bullet_object.set_instance_render_count(self.bullet_count)
             self.current_fire_term = self.fire_term
 
-    def update(self, delta_time, actor_transform):
-        actor_position = actor_transform.get_pos()
-        self.bullet_object.transform.set_pos(actor_position)
+    def update_bullet(self, delta_time, player_actor_position):
+        self.bullet_object.transform.set_pos(player_actor_position)
 
         bullet_index = 0
         for i in range(self.bullet_count):
             bullet_transform = self.bullet_transforms[bullet_index]
-            if length(bullet_transform.get_pos() - actor_position) < self.max_distance:
+            if length(bullet_transform.get_pos() - player_actor_position) < self.max_distance:
                 bullet_transform.move_front(self.bullet_speed * delta_time)
                 bullet_transform.update_transform()
                 self.bullet_object.instance_matrix[i][...] = bullet_transform.matrix
-                matrix_translate(self.bullet_object.instance_matrix[i], *(-actor_position))
+                matrix_translate(self.bullet_object.instance_matrix[i], *(-player_actor_position))
                 bullet_index += 1
             else:
                 self.destroy_bullet(bullet_index)

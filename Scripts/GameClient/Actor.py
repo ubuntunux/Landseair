@@ -1,9 +1,63 @@
+import numpy as np
+
 from PyEngine3D.Utilities import *
 from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger, log_level, COMMAND
 
-from GameClient.Bullet import BulletActor
 from GameClient.Constants import *
+
+
+class ActorManager:
+    def __init__(self):
+        self.scene_manager = None
+        self.resource_manager = None
+        self.player_actor = None
+        self.actors = []
+        self.animation_meshes = {}
+
+    def initialize(self, scene_manager, resource_manager):
+        self.scene_manager = scene_manager
+        self.resource_manager = resource_manager
+
+        animation_list = ['idle']
+
+        for key in animation_list:
+            # self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00_" + key)
+            self.animation_meshes[key] = resource_manager.get_mesh("Plane00")
+
+        self.player_actor = PlayerActor(self.scene_manager, self.resource_manager, actor_model="Plane00", pos=Float3(0.0, 5.0, 0.0), rotation=PI, scale=1.0)
+
+        count = 30
+        for i in range(count):
+            pos = np.random.rand(3) * Float3(100.0, 10.0, 100.0)
+            pos[1] += 5.0
+            rotation = np.random.rand() * TWO_PI
+            actor = ShipActor(scene_manager, resource_manager, actor_model="Plane00", pos=pos, rotation=rotation)
+            self.actors.append(actor)
+
+    def destroy(self):
+        self.destroy_actor(self.player_actor)
+        self.player_actor = None
+
+        for actor in self.actors:
+            self.destroy_actor(actor)
+        self.actors = []
+
+    def destroy_actor(self, actor):
+        actor.destroy(self.scene_manager)
+
+    def update_actors(self, delta_time):
+        index = 0
+        actor_count = len(self.actors)
+
+        for i in range(actor_count):
+            actor = self.actors[index]
+            if actor.is_alive:
+                actor.update_actor(self, delta_time)
+                index += 1
+            else:
+                self.destroy_actor(actor)
+                self.actors.pop(index)
 
 
 class ShipActor:
@@ -17,11 +71,13 @@ class ShipActor:
         self.actor_object.transform.set_yaw(rotation)
         self.actor_object.transform.set_scale(scale)
 
-        self.bullet_actor = BulletActor(scene_manager, resource_manager)
-
+        self.is_alive = True
         self.acceleration = 1.0
         self.side_acceleration = 0.0
         self.velocity = Float3(0.0, 0.0, 0.0)
+
+    def set_dead(self):
+        self.is_alive = False
 
     def destroy(self, scene_manager):
         scene_manager.delete_object(self.actor_object.name)
@@ -141,9 +197,3 @@ class PlayerActor(ShipActor):
         actor_pos = old_actor_pos + move_delta
 
         actor_transform.set_pos(actor_pos)
-
-        if btn_left or keydown[Keyboard.SPACE]:
-            camera_transform = game_client.scene_manager.main_camera.transform
-            self.bullet_actor.fire(actor_transform, camera_transform, game_client.target_actor_distance)
-
-        self.bullet_actor.update(delta_time, actor_transform)
