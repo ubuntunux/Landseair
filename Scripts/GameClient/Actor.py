@@ -82,6 +82,9 @@ class ShipActor:
     def destroy(self, scene_manager):
         scene_manager.delete_object(self.actor_object.name)
 
+    def get_center(self):
+        return self.actor_object.bound_box.bound_center
+
     def get_pos(self):
         return self.actor_object.transform.get_pos()
 

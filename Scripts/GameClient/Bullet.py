@@ -22,12 +22,16 @@ class BulletManager:
         self.bullet_actor.destroy(self.scene_manager)
         self.bullet_actor = None
 
-    def update_bullets(self, delta_time, player_actor_position):
+    def update_bullets(self, delta_time, player_actor_position, actors):
+        for actor in actors:
+            if self.bullet_actor.check_collide(actor):
+                actor.set_dead()
+
         self.bullet_actor.update_bullet(delta_time, player_actor_position)
 
 
 class BulletActor:
-    fire_offset = 2.0
+    fire_offset = 0.5
     fire_term = 0.3
     max_distance = 100.0
     bullet_speed = 1000.0
@@ -75,7 +79,6 @@ class BulletActor:
             bullet_dir = normalize(bullet_delta)
             to_actor = bound_box_pos - bullet_pos0
             d = length(to_actor - np.dot(bullet_dir, to_actor) * bullet_dir)
-
             if d <= bound_box.radius * 0.5:
                 self.destroy_bullet(i)
                 return True
@@ -91,9 +94,9 @@ class BulletActor:
             if 0.0 < target_actor_distance:
                 target_position = camera_transform.get_pos() - camera_transform.front * target_actor_distance
             else:
-                target_position = bullet_position
+                target_position = bullet_position + bullet_position - actor_position
             matrix = Matrix4()
-            lookat(matrix, actor_position, target_position, WORLD_UP)
+            lookat(matrix, bullet_position, target_position, WORLD_UP)
 
             bullet_transform.rotationMatrix[0][:3] = matrix[0][:3]
             bullet_transform.rotationMatrix[1][:3] = matrix[1][:3]

@@ -205,33 +205,31 @@ class GameClient:
         camera_transform = self.scene_manager.main_camera.transform
         camera_pos = camera_transform.get_pos()
         aim_dir = -camera_transform.front
-        bullet_actor = self.bullet_manager.bullet_actor
 
         self.target_actor = None
         self.target_actor_distance = 0.0
-        target_angle = TWO_PI
         target_dist = 10000000.0
 
         for actor in self.actor_manager.actors:
-            if bullet_actor.check_collide(actor):
-                actor.set_dead()
-            else:
-                to_actor = actor.get_pos() - camera_pos
-                d = np.dot(aim_dir, to_actor)
-                if 0.0 < d:
-                    c = to_actor - aim_dir * d
-                    angle = math.atan2(length(c), d)
-                    if angle < target_angle and angle < AIM_ANGLE_THRESHOLD:
-                        dist = length(actor.get_pos() - camera_pos)
-                        if dist < target_dist:
-                            target_angle = angle
-                            target_dist = dist
-                            self.target_actor = actor
-                            self.target_actor_distance = dist
+            to_actor = actor.get_center() - camera_pos
+            d = np.dot(aim_dir, to_actor)
+            if 0.0 < d:
+                c = to_actor - aim_dir * d
+                angle = math.atan2(length(c), d)
+                if angle < AIM_ANGLE_THRESHOLD:
+                    x = np.dot(camera_transform.left, to_actor)
+                    y = np.dot(camera_transform.up, to_actor)
+                    dist = math.sqrt(x*x + y*y)
+                    if dist < target_dist:
+                        target_dist = dist
+                        self.target_actor = actor
+                        self.target_actor_distance = length(to_actor)
+        if self.target_actor is not None:
+            self.scene_manager.set_selected_object(self.target_actor.actor_object.name)
 
     def update(self, delta_time):
         self.update_player(delta_time)
         self.actor_manager.update_actors(delta_time)
-        self.bullet_manager.update_bullets(delta_time, self.actor_manager.player_actor.get_pos())
         self.find_target_actor()
+        self.bullet_manager.update_bullets(delta_time, self.actor_manager.player_actor.get_center(), self.actor_manager.actors)
         self.state_manager.update_state(delta_time)
