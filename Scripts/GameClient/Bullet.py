@@ -11,11 +11,13 @@ class BulletManager:
     def __init__(self):
         self.scene_manager = None
         self.resource_manager = None
+        self.game_effect_manager = None
         self.bullet_actor = None
 
-    def initialize(self, scene_manager, resource_manager):
+    def initialize(self, scene_manager, resource_manager, game_effect_manager):
         self.scene_manager = scene_manager
         self.resource_manager = resource_manager
+        self.game_effect_manager = game_effect_manager
         self.bullet_actor = BulletActor(scene_manager, resource_manager)
 
     def destroy(self):
@@ -79,7 +81,7 @@ class BulletActor:
             bullet_dir = normalize(bullet_delta)
             to_actor = bound_box_pos - bullet_pos0
             d = length(to_actor - np.dot(bullet_dir, to_actor) * bullet_dir)
-            if d <= bound_box.radius * 0.5:
+            if d <= bound_box.radius * 0.75:
                 self.destroy_bullet(i)
                 return True
         return False

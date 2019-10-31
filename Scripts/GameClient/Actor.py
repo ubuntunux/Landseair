@@ -11,13 +11,15 @@ class ActorManager:
     def __init__(self):
         self.scene_manager = None
         self.resource_manager = None
+        self.game_effect_manager = None
         self.player_actor = None
         self.actors = []
         self.animation_meshes = {}
 
-    def initialize(self, scene_manager, resource_manager):
+    def initialize(self, scene_manager, resource_manager, game_effect_manager):
         self.scene_manager = scene_manager
         self.resource_manager = resource_manager
+        self.game_effect_manager = game_effect_manager
 
         animation_list = ['idle']
 
@@ -56,6 +58,7 @@ class ActorManager:
                 actor.update_actor(self, delta_time)
                 index += 1
             else:
+                self.game_effect_manager.create_explosion(actor.get_pos())
                 self.destroy_actor(actor)
                 self.actors.pop(index)
 

@@ -9,6 +9,7 @@ from PyEngine3D.Utilities import *
 from GameClient.GameState import *
 from GameClient.Actor import ActorManager
 from GameClient.Bullet import BulletManager
+from GameClient.GameEffectManager import GameEffectManager
 from GameClient.Constants import *
 
 
@@ -22,6 +23,7 @@ class GameClient:
         self.main_viewport = None
         self.actor_manager = None
         self.bullet_manager = None
+        self.game_effect_manager = None
         self.crosshair = None
         self.player_aim = None
         self.target_actor = None
@@ -41,9 +43,13 @@ class GameClient:
         self.main_viewport = core_manager.viewport_manager.main_viewport
         self.actor_manager = ActorManager()
         self.bullet_manager = BulletManager()
+        self.game_effect_manager = GameEffectManager()
 
-        self.actor_manager.initialize(self.scene_manager, self.resource_manager)
-        self.bullet_manager.initialize(self.scene_manager, self.resource_manager)
+        self.resource_manager.open_scene('stage00')
+
+        self.actor_manager.initialize(self.scene_manager, self.resource_manager, self.game_effect_manager)
+        self.bullet_manager.initialize(self.scene_manager, self.resource_manager, self.game_effect_manager)
+        self.game_effect_manager.initialize(self.scene_manager, self.resource_manager)
 
         self.camera_pitch_delay = 0.0
         self.camera_yaw_delay = 0.0
@@ -56,8 +62,6 @@ class GameClient:
         main_camera.transform.euler_to_quaternion()
 
         self.build_ui()
-
-        self.resource_manager.open_scene('stage00')
 
     def exit(self):
         logger.info("GameClient::exit")
@@ -199,6 +203,7 @@ class GameClient:
         camera_pos += camera_transform.up * self.camera_offset_vertical
 
         camera_pos[1] += CAMERA_OFFSET_Y
+
         camera_transform.set_pos(camera_pos)
 
     def find_target_actor(self):
@@ -233,3 +238,4 @@ class GameClient:
         self.find_target_actor()
         self.bullet_manager.update_bullets(delta_time, self.actor_manager.player_actor.get_center(), self.actor_manager.actors)
         self.state_manager.update_state(delta_time)
+        self.game_effect_manager.update()
