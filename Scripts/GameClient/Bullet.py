@@ -9,12 +9,14 @@ from GameClient.Constants import *
 
 class BulletManager:
     def __init__(self):
+        self.core_manager = None
         self.scene_manager = None
         self.resource_manager = None
         self.game_effect_manager = None
         self.bullet_actor = None
 
-    def initialize(self, scene_manager, resource_manager, game_effect_manager):
+    def initialize(self, core_manager, scene_manager, resource_manager, game_effect_manager):
+        self.core_manager = core_manager
         self.scene_manager = scene_manager
         self.resource_manager = resource_manager
         self.game_effect_manager = game_effect_manager
@@ -27,17 +29,18 @@ class BulletManager:
     def update_bullets(self, delta_time, player_actor_position, actors):
         for actor in actors:
             if self.bullet_actor.check_collide(actor):
-                actor.set_dead()
-
-        self.bullet_actor.update_bullet(delta_time, player_actor_position)
+                actor.set_damage(self.bullet_actor.damage)
+                self.game_effect_manager.create_damage_particle(actor.get_pos())
+        self.bullet_actor.update_bullet(self.core_manager.debug_line_manager, delta_time, player_actor_position)
 
 
 class BulletActor:
     fire_offset = 0.5
     fire_term = 0.3
-    max_distance = 100.0
+    max_distance = 1000.0
     bullet_speed = 1000.0
-    max_bullet_count = max(2, int(math.ceil((bullet_speed / max_distance) / fire_term)))
+    damage = 1
+    max_bullet_count = max(10, int(math.ceil((bullet_speed / max_distance) / fire_term)))
 
     def __init__(self, scene_manager, resource_manager):
         bullet_model = resource_manager.get_model("Cube")
@@ -73,15 +76,22 @@ class BulletActor:
     def check_collide(self, actor):
         bound_box = actor.actor_object.bound_box
         bound_box_pos = bound_box.bound_center
+        radius = bound_box.radius * 0.5
 
         for i in range(self.bullet_count):
+            collide = False
             bullet_pos0 = self.bullet_transforms[i].get_prev_pos()
             bullet_pos1 = self.bullet_transforms[i].get_pos()
-            bullet_delta = bullet_pos1 - bullet_pos0
-            bullet_dir = normalize(bullet_delta)
-            to_actor = bound_box_pos - bullet_pos0
-            d = length(to_actor - np.dot(bullet_dir, to_actor) * bullet_dir)
-            if d <= bound_box.radius * 0.75:
+            to_actor0 = bound_box_pos - bullet_pos0
+            to_actor1 = bound_box_pos - bullet_pos1
+            if length(to_actor0) <= radius or length(to_actor1) <= radius:
+                collide = True
+            elif np.dot(to_actor0, to_actor1) <= 0.0:
+                bullet_dir = normalize(bullet_pos1 - bullet_pos0)
+                d = length(to_actor0 - bullet_dir * np.dot(to_actor0, bullet_dir))
+                if d <= radius:
+                    collide = True
+            if collide:
                 self.destroy_bullet(i)
                 return True
         return False
@@ -110,7 +120,7 @@ class BulletActor:
             self.bullet_object.set_instance_render_count(self.bullet_count)
             self.current_fire_term = self.fire_term
 
-    def update_bullet(self, delta_time, player_actor_position):
+    def update_bullet(self, debug_line_manager, delta_time, player_actor_position):
         self.bullet_object.transform.set_pos(player_actor_position)
 
         bullet_index = 0
@@ -119,6 +129,11 @@ class BulletActor:
             if length(bullet_transform.get_pos() - player_actor_position) < self.max_distance:
                 bullet_transform.move_front(self.bullet_speed * delta_time)
                 bullet_transform.update_transform()
+
+                bullet_pos0 = bullet_transform.get_prev_pos()
+                bullet_pos1 = bullet_transform.get_pos()
+                debug_line_manager.draw_debug_line_3d(bullet_pos0, bullet_pos1, Float4(1.0, 1.0, 0.0, 1.0), 30.0, is_infinite=True)
+
                 self.bullet_object.instance_matrix[i][...] = bullet_transform.matrix
                 matrix_translate(self.bullet_object.instance_matrix[i], *(-player_actor_position))
                 bullet_index += 1

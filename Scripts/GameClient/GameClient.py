@@ -48,7 +48,7 @@ class GameClient:
         self.resource_manager.open_scene('stage00')
 
         self.actor_manager.initialize(self.scene_manager, self.resource_manager, self.game_effect_manager)
-        self.bullet_manager.initialize(self.scene_manager, self.resource_manager, self.game_effect_manager)
+        self.bullet_manager.initialize(self.core_manager, self.scene_manager, self.resource_manager, self.game_effect_manager)
         self.game_effect_manager.initialize(self.scene_manager, self.resource_manager)
 
         self.camera_pitch_delay = 0.0

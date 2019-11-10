@@ -58,7 +58,8 @@ class ActorManager:
                 actor.update_actor(self, delta_time)
                 index += 1
             else:
-                self.game_effect_manager.create_explosion(actor.get_pos())
+                # dead
+                self.game_effect_manager.create_explosion_particle(actor.get_pos())
                 self.destroy_actor(actor)
                 self.actors.pop(index)
 
@@ -75,12 +76,19 @@ class ShipActor:
         self.actor_object.transform.set_scale(scale)
 
         self.is_alive = True
+        self.hp = 3
         self.acceleration = 1.0
         self.side_acceleration = 0.0
         self.velocity = Float3(0.0, 0.0, 0.0)
 
     def set_dead(self):
         self.is_alive = False
+
+    def set_damage(self, damage):
+        self.hp -= damage
+        if self.hp <= 0:
+            self.hp = 0
+            self.set_dead()
 
     def destroy(self, scene_manager):
         scene_manager.delete_object(self.actor_object.name)
