@@ -6,7 +6,6 @@ from PyEngine3D.Common import logger, log_level, COMMAND
 from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
 
-from GameClient.GameState import *
 from GameClient.Actor import ActorManager
 from GameClient.Bullet import BulletManager
 from GameClient.GameEffectManager import GameEffectManager
@@ -30,7 +29,6 @@ class GameClient:
         self.target_actor_distance = 0.0
         self.camera_distance = 0.0
         self.animation_meshes = {}
-        self.state_manager = GameStateManager()
 
     def initialize(self, core_manager):
         logger.info("GameClient::initialize")
@@ -63,8 +61,11 @@ class GameClient:
 
         self.build_ui()
 
+        self.game_backend.set_mouse_grab(True)
+
     def exit(self):
         logger.info("GameClient::exit")
+        self.core_manager.debug_line_manager.clear_debug_lines()
         self.clear_ui()
         self.actor_manager.destroy()
         self.bullet_manager.destroy()
@@ -237,5 +238,4 @@ class GameClient:
         self.actor_manager.update_actors(delta_time)
         self.find_target_actor()
         self.bullet_manager.update_bullets(delta_time, self.actor_manager.player_actor.get_center(), self.actor_manager.actors)
-        self.state_manager.update_state(delta_time)
         self.game_effect_manager.update()

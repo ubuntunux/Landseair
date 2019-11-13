@@ -5,6 +5,7 @@ from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger, log_level, COMMAND
 
 from GameClient.Constants import *
+from GameClient.GameState import TankStateMachine
 
 
 class ActorManager:
@@ -29,12 +30,21 @@ class ActorManager:
 
         self.player_actor = PlayerActor(self.scene_manager, self.resource_manager, actor_model="Plane00", pos=Float3(0.0, 5.0, 0.0), rotation=PI, scale=1.0)
 
-        count = 30
+        count = 10
         for i in range(count):
             pos = np.random.rand(3) * Float3(100.0, 10.0, 100.0)
             pos[1] += 5.0
             rotation = np.random.rand() * TWO_PI
-            actor = ShipActor(scene_manager, resource_manager, actor_model="Plane00", pos=pos, rotation=rotation)
+            actor = BaseActor(scene_manager, resource_manager, actor_model="Plane00", pos=pos, rotation=rotation)
+            self.actors.append(actor)
+
+        count = 10
+        for i in range(count):
+            pos = np.random.rand(3) * Float3(100.0, 10.0, 100.0)
+            pos[1] += 5.0
+            rotation = np.random.rand() * TWO_PI
+            state_machine = TankStateMachine()
+            actor = BaseActor(scene_manager, resource_manager, actor_model="Tank", pos=pos, rotation=rotation, state_machine=state_machine)
             self.actors.append(actor)
 
     def destroy(self):
@@ -64,10 +74,10 @@ class ActorManager:
                 self.actors.pop(index)
 
 
-class ShipActor:
+class BaseActor:
     isPlayer = False
 
-    def __init__(self, scene_manager, resource_manager, actor_model, pos=Float3(0.0), rotation=0.0, scale=1.0):
+    def __init__(self, scene_manager, resource_manager, actor_model, pos=Float3(0.0), rotation=0.0, scale=1.0, state_machine=None):
         actor_model = resource_manager.get_model(actor_model)
 
         self.actor_object = scene_manager.add_object(model=actor_model)
@@ -80,6 +90,10 @@ class ShipActor:
         self.acceleration = 1.0
         self.side_acceleration = 0.0
         self.velocity = Float3(0.0, 0.0, 0.0)
+
+        self.state_machine = state_machine
+        if self.state_machine is not None:
+            self.state_machine.initialize(self)
 
     def set_dead(self):
         self.is_alive = False
@@ -103,10 +117,11 @@ class ShipActor:
         return self.actor_object.transform
 
     def update_actor(self, game_client, delta_time):
-        pass
+        if self.state_machine is not None:
+            self.state_machine.update_state(delta_time)
 
 
-class PlayerActor(ShipActor):
+class PlayerActor(BaseActor):
     isPlayer = True
 
     def update_player(self, game_client, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw):
