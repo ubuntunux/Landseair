@@ -211,8 +211,8 @@ class PlayerActor(BaseActor):
             self.side_acceleration -= SIDE_ACCELERATION * delta_time
         else:
             sign = np.sign(self.side_acceleration)
-            self.side_acceleration -= sign * SIDE_ACCELERATION * delta_time
-            if sign != self.side_acceleration:
+            self.side_acceleration -= sign * SIDE_ACCELERATION * delta_time * 0.5
+            if sign != np.sign(self.side_acceleration):
                 self.side_acceleration = 0.0
         self.side_acceleration = min(1.0, max(-1.0, self.side_acceleration))
 
@@ -222,9 +222,10 @@ class PlayerActor(BaseActor):
         elif keydown[Keyboard.E] and old_actor_pos[1] < (TOP_POSITION_LIMIT - DAMPING_HEIGHT):
             self.vertical_acceleration += VERTICAL_ACCELERATION * delta_time
         else:
+            prev_acc = self.vertical_acceleration
             sign = np.sign(self.vertical_acceleration)
-            self.vertical_acceleration -= sign * VERTICAL_ACCELERATION * delta_time
-            if sign != self.vertical_acceleration:
+            self.vertical_acceleration -= sign * VERTICAL_ACCELERATION * delta_time * 0.5
+            if sign != np.sign(self.vertical_acceleration):
                 self.vertical_acceleration = 0.0
         self.vertical_acceleration = min(1.0, max(-1.0, self.vertical_acceleration))
 

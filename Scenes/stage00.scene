@@ -45,7 +45,7 @@
                    'instance_scale_list': [],
                    'model': 'Cube',
                    'name': 'light_probe',
-                   'pos': [0.0, 0.0, 0.0],
+                   'pos': [0.0, 5.0, 0.0],
                    'rot': [0.0, 0.0, 0.0],
                    'scale': [1.0, 1.0, 1.0],
                    'visible': True}],
