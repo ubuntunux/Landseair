@@ -89,6 +89,7 @@ class BaseActor:
         self.hp = 3
         self.acceleration = 1.0
         self.side_acceleration = 0.0
+        self.vertical_acceleration = 0.0
         self.velocity = Float3(0.0, 0.0, 0.0)
 
         self.state_machine = state_machine
@@ -196,13 +197,14 @@ class PlayerActor(BaseActor):
 
             actor_transform.update_transform()
 
-        # move
+        # move to forward
         if keydown[Keyboard.W]:
             self.acceleration += ACCELERATION * delta_time
         elif keydown[Keyboard.S]:
             self.acceleration -= ACCELERATION * delta_time
         self.acceleration = min(1.0, max(-0.5, self.acceleration))
 
+        # move to side
         if keydown[Keyboard.A]:
             self.side_acceleration += SIDE_ACCELERATION * delta_time
         elif keydown[Keyboard.D]:
@@ -210,9 +212,21 @@ class PlayerActor(BaseActor):
         else:
             sign = np.sign(self.side_acceleration)
             self.side_acceleration -= sign * SIDE_ACCELERATION * delta_time
-            if sign == self.side_acceleration:
+            if sign != self.side_acceleration:
                 self.side_acceleration = 0.0
         self.side_acceleration = min(1.0, max(-1.0, self.side_acceleration))
+
+        # move to vertical
+        if keydown[Keyboard.Q] and (BOTTOM_POSITION_LIMIT + DAMPING_HEIGHT) < old_actor_pos[1]:
+            self.vertical_acceleration -= VERTICAL_ACCELERATION * delta_time
+        elif keydown[Keyboard.E] and old_actor_pos[1] < (TOP_POSITION_LIMIT - DAMPING_HEIGHT):
+            self.vertical_acceleration += VERTICAL_ACCELERATION * delta_time
+        else:
+            sign = np.sign(self.vertical_acceleration)
+            self.vertical_acceleration -= sign * VERTICAL_ACCELERATION * delta_time
+            if sign != self.vertical_acceleration:
+                self.vertical_acceleration = 0.0
+        self.vertical_acceleration = min(1.0, max(-1.0, self.vertical_acceleration))
 
         forward_dir = actor_transform.front.copy()
         side_dir = actor_transform.left.copy()
@@ -220,9 +234,11 @@ class PlayerActor(BaseActor):
         side_dir[1] = 0.0
         forward_dir = normalize(forward_dir)
         side_dir = normalize(side_dir)
-        self.velocity[...] = forward_dir * self.acceleration * FORWARD_MOVE_SPEED + side_dir * self.side_acceleration * SIDE_MOVE_SPEED
+        self.velocity[...] = forward_dir * self.acceleration * FORWARD_MOVE_SPEED
+        self.velocity += side_dir * self.side_acceleration * SIDE_MOVE_SPEED
+        self.velocity[1] += self.vertical_acceleration * VERTICAL_MOVE_SPEED
 
         move_delta = self.velocity * delta_time
         actor_pos = old_actor_pos + move_delta
-
+        actor_pos[1] = min(TOP_POSITION_LIMIT, max(BOTTOM_POSITION_LIMIT, actor_pos[1]))
         actor_transform.set_pos(actor_pos)

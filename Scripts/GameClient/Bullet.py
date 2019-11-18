@@ -130,6 +130,10 @@ class BulletActor:
                 bullet_transform.move_front(self.bullet_speed * delta_time)
                 bullet_transform.update_transform()
 
+                # bullet_pos0 = bullet_transform.get_prev_pos()
+                # bullet_pos1 = bullet_transform.get_pos()
+                # debug_line_manager.draw_debug_line_3d(bullet_pos0, bullet_pos1, Float4(1.0, 1.0, 0.0, 1.0), 5.0, is_infinite=True)
+
                 self.bullet_object.instance_matrix[i][...] = bullet_transform.matrix
                 matrix_translate(self.bullet_object.instance_matrix[i], *(-player_actor_position))
                 bullet_index += 1

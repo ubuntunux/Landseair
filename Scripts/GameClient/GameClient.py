@@ -158,9 +158,9 @@ class GameClient:
                 rotation[2] = 0.0
                 camera_transform.set_rotation(rotation)
 
-        if keydown[Keyboard.Q]:
+        if keydown[Keyboard.Z]:
             self.camera_distance -= ZOOM_SPEED * delta_time
-        elif keydown[Keyboard.E]:
+        elif keydown[Keyboard.C]:
             self.camera_distance += ZOOM_SPEED * delta_time
 
         # update player
