@@ -61,7 +61,7 @@ class GameClient:
 
         self.build_ui()
 
-        self.game_backend.set_mouse_grab(True)
+        self.game_backend.set_mouse_grab(False)
 
     def exit(self):
         logger.info("GameClient::exit")
