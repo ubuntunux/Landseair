@@ -65,7 +65,6 @@ class GameClient:
 
     def exit(self):
         logger.info("GameClient::exit")
-        self.core_manager.debug_line_manager.clear_debug_lines()
         self.clear_ui()
         self.actor_manager.destroy()
         self.bullet_manager.destroy()
