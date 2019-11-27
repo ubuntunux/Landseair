@@ -100,7 +100,6 @@ class GameClient:
         is_mouse_grab = self.game_backend.get_mouse_grab()
         screen_width = self.main_viewport.width
         screen_height = self.main_viewport.height
-        inv_view_origin_projection = np.dot(camera.inv_projection, camera.inv_view_origin)
 
         player_actor = self.actor_manager.player_actor
         player_transform = player_actor.get_transform()
@@ -123,7 +122,7 @@ class GameClient:
         aim_x_diff_ratio = crosshair_x_ratio - aim_x_ratio
         aim_y_diff_ratio = crosshair_y_ratio - aim_y_ratio
 
-        crosshair_pos = np.dot(Float4(crosshair_x_ratio * 2.0 - 1.0, crosshair_y_ratio * 2.0 - 1.0, 0.0, 1.0), inv_view_origin_projection)
+        crosshair_pos = np.dot(Float4(crosshair_x_ratio * 2.0 - 1.0, crosshair_y_ratio * 2.0 - 1.0, 0.0, 1.0), camera.inv_view_origin_projection)
         crosshair_dir = normalize(crosshair_pos[0:3])
         to_player = player_transform.get_pos() - camera_transform.get_pos()
         dir_amount = np.dot(to_player, crosshair_dir)
