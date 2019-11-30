@@ -154,48 +154,47 @@ class PlayerActor(BaseActor):
         if PI < diff_roll or diff_roll < -PI:
             diff_roll -= np.sign(diff_roll) * TWO_PI
 
-        if is_mouse_grab:
-            pitch_speed_ratio = abs(crosshair_y_ratio * 2.0 - 1.0)
-            yaw_speed_ratio = abs(crosshair_x_ratio * 2.0 - 1.0)
-            pitch_speed = pitch_speed_ratio * ROTATION_SPEED * delta_time
-            yaw_speed = yaw_speed_ratio * ROTATION_SPEED * delta_time
-            roll_speed = ROTATION_ROLL_SPEED * delta_time
+        pitch_speed_ratio = abs(crosshair_y_ratio * 2.0 - 1.0)
+        yaw_speed_ratio = abs(crosshair_x_ratio * 2.0 - 1.0)
+        pitch_speed = pitch_speed_ratio * ROTATION_SPEED * delta_time
+        yaw_speed = yaw_speed_ratio * ROTATION_SPEED * delta_time
+        roll_speed = ROTATION_ROLL_SPEED * delta_time
 
-            # set pitch
-            if abs(diff_pitch) <= pitch_speed:
-                actor_transform.set_pitch(goal_aim_pitch)
-            else:
-                actor_transform.rotation_pitch(pitch_speed * np.sign(diff_pitch))
+        # set pitch
+        if abs(diff_pitch) <= pitch_speed:
+            actor_transform.set_pitch(goal_aim_pitch)
+        else:
+            actor_transform.rotation_pitch(pitch_speed * np.sign(diff_pitch))
 
-            result_pitch = actor_transform.get_pitch()
+        result_pitch = actor_transform.get_pitch()
 
-            # pitch threashold
-            if PI * 1.5 < result_pitch < (TWO_PI - ROTATION_PITCH_LIMIT):
-                actor_transform.set_pitch(TWO_PI - ROTATION_PITCH_LIMIT)
-            elif ROTATION_PITCH_LIMIT < result_pitch < PI * 0.5:
-                actor_transform.set_pitch(ROTATION_PITCH_LIMIT)
+        # pitch threashold
+        if PI * 1.5 < result_pitch < (TWO_PI - ROTATION_PITCH_LIMIT):
+            actor_transform.set_pitch(TWO_PI - ROTATION_PITCH_LIMIT)
+        elif ROTATION_PITCH_LIMIT < result_pitch < PI * 0.5:
+            actor_transform.set_pitch(ROTATION_PITCH_LIMIT)
 
-            # set yaw
-            if abs(diff_yaw) <= yaw_speed:
-                actor_transform.set_yaw(goal_aim_yaw)
-            else:
-                actor_transform.rotation_yaw(yaw_speed * np.sign(diff_yaw))
+        # set yaw
+        if abs(diff_yaw) <= yaw_speed:
+            actor_transform.set_yaw(goal_aim_yaw)
+        else:
+            actor_transform.rotation_yaw(yaw_speed * np.sign(diff_yaw))
 
-            # set roll
-            if abs(diff_roll) <= roll_speed:
-                actor_transform.set_roll(goal_actor_roll)
-            else:
-                actor_transform.rotation_roll(roll_speed * np.sign(diff_roll))
+        # set roll
+        if abs(diff_roll) <= roll_speed:
+            actor_transform.set_roll(goal_actor_roll)
+        else:
+            actor_transform.rotation_roll(roll_speed * np.sign(diff_roll))
 
-            result_roll = actor_transform.get_roll()
+        result_roll = actor_transform.get_roll()
 
-            # roll threashold
-            if PI * 1.5 < result_roll < (TWO_PI - ROTATION_ROLL_LIMIT):
-                actor_transform.set_roll(TWO_PI - ROTATION_ROLL_LIMIT)
-            elif ROTATION_PITCH_LIMIT < result_roll < PI * 0.5:
-                actor_transform.set_roll(ROTATION_ROLL_LIMIT)
+        # roll threashold
+        if PI * 1.5 < result_roll < (TWO_PI - ROTATION_ROLL_LIMIT):
+            actor_transform.set_roll(TWO_PI - ROTATION_ROLL_LIMIT)
+        elif ROTATION_PITCH_LIMIT < result_roll < PI * 0.5:
+            actor_transform.set_roll(ROTATION_ROLL_LIMIT)
 
-            actor_transform.update_transform()
+        actor_transform.update_transform()
 
         # move to forward
         if keydown[Keyboard.W]:

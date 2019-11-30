@@ -5,6 +5,7 @@ from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger, log_level, COMMAND
 from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
+from PyEngine3D.Render import RenderOption
 
 from GameClient.Actor import ActorManager
 from GameClient.Bullet import BulletManager
@@ -62,6 +63,8 @@ class GameClient:
         self.build_ui()
 
         self.game_backend.set_mouse_grab(False)
+        RenderOption.RENDER_GIZMO = False
+        RenderOption.RENDER_OBJECT_ID = False
 
     def exit(self):
         logger.info("GameClient::exit")
@@ -69,6 +72,8 @@ class GameClient:
         self.actor_manager.destroy()
         self.bullet_manager.destroy()
         self.game_backend.set_mouse_grab(False)
+        RenderOption.RENDER_GIZMO = True
+        RenderOption.RENDER_OBJECT_ID = True
 
     def build_ui(self):
         crosshair_texture = self.resource_manager.get_texture('crosshair')
@@ -100,20 +105,15 @@ class GameClient:
         is_mouse_grab = self.game_backend.get_mouse_grab()
         screen_width = self.main_viewport.width
         screen_height = self.main_viewport.height
-
         player_actor = self.actor_manager.player_actor
         player_transform = player_actor.get_transform()
         bullet_actor = self.bullet_manager.bullet_actor
-
-        # crosshair
         crosshair_half_width = self.crosshair.width / 2
         crosshair_half_height = self.crosshair.height / 2
+
         if is_mouse_grab:
             self.crosshair.x = min(max(-crosshair_half_width, self.crosshair.x + mouse_delta[0]), screen_width - crosshair_half_width)
             self.crosshair.y = min(max(-crosshair_half_height, self.crosshair.y + mouse_delta[1]), screen_height - crosshair_half_height)
-        else:
-            self.crosshair.x = mouse_pos[0] - crosshair_half_width
-            self.crosshair.y = mouse_pos[1] - crosshair_half_height
 
         crosshair_x_ratio = (self.crosshair.x + crosshair_half_width) / screen_width
         crosshair_y_ratio = (self.crosshair.y + crosshair_half_height) / screen_height
@@ -140,21 +140,11 @@ class GameClient:
             self.game_backend.toggle_mouse_grab()
 
         # camera rotation
-        if not is_mouse_grab:
-            if btn_left or btn_right:
-                camera_transform.set_use_quaternion(False)
-                camera_transform.rotation_pitch(mouse_delta[1] * camera.rotation_speed)
-                camera_transform.rotation_yaw(-mouse_delta[0] * camera.rotation_speed)
-                camera_transform.update_transform()
-        else:
-            if player_transform.use_quaternion:
-                camera_transform.set_quaternion(player_transform.get_quaternion())
-            else:
-                rotation = player_transform.get_rotation()
-                rotation[0] = -rotation[0]
-                rotation[1] += PI
-                rotation[2] = 0.0
-                camera_transform.set_rotation(rotation)
+        rotation = player_transform.get_rotation()
+        rotation[0] = -rotation[0]
+        rotation[1] += PI
+        rotation[2] = 0.0
+        camera_transform.set_rotation(rotation)
 
         if keydown[Keyboard.Z]:
             self.camera_distance -= ZOOM_SPEED * delta_time
@@ -200,9 +190,7 @@ class GameClient:
             self.camera_offset_vertical = goal_offset_vertical
 
         camera_pos += camera_transform.up * self.camera_offset_vertical
-
         camera_pos[1] += CAMERA_OFFSET_Y
-
         camera_transform.set_pos(camera_pos)
 
     def find_target_actor(self):
