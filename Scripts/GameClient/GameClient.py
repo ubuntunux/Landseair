@@ -155,7 +155,7 @@ class GameClient:
         player_actor.update_player(self, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw)
 
         # fire
-        if btn_left or keydown[Keyboard.SPACE]:
+        if is_mouse_grab and (btn_left or keydown[Keyboard.SPACE]):
             bullet_actor.fire(player_transform, camera_transform, self.target_actor_distance)
 
         aim_pos = player_actor.get_pos() + player_transform.front * AIM_DISTANCE - camera_transform.get_pos()
@@ -166,7 +166,6 @@ class GameClient:
         self.player_aim.y = aim_pos[1] * screen_height - self.player_aim.height / 2
 
         camera_pos = player_actor.get_pos() + camera_transform.front * self.camera_distance
-
         camera_offset_speed = CAMERA_OFFSET_SPEED * delta_time
 
         # camera offset horizontal
