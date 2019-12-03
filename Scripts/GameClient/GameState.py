@@ -9,9 +9,11 @@ class STATES:
 
 
 class StateNone(StateItem):
-    def on_update(self, delta_time, actor):
-        actor.actor_object.transform.rotation_yaw(delta_time * math.pi)
-        actor.actor_object.transform.move_front(10.0 * delta_time)
+    def on_update(self, state_machine, delta_time):
+        actor = state_machine.actor
+        t = (state_machine.elapsed_time * 0.1) % 1.0
+        pos0 = actor.spline_path.get_resampling_position(t)
+        actor.actor_object.transform.set_pos(pos0 * 10.0)
 
 
 class TankStateMachine(StateMachine):
@@ -28,6 +30,6 @@ class TankStateMachine(StateMachine):
 
     def update_state(self, delta_time):
         self.delta = delta_time
-        StateMachine.update_state(self, delta_time, self.actor)
+        StateMachine.update_state(self, self, delta_time)
 
         self.elapsed_time += delta_time

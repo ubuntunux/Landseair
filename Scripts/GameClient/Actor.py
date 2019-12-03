@@ -80,6 +80,8 @@ class BaseActor:
     def __init__(self, scene_manager, resource_manager, actor_model, pos=Float3(), rotation=0.0, scale=1.0, state_machine=None):
         actor_model = resource_manager.get_model(actor_model)
 
+        self.spline_path = resource_manager.get_spline('spline')
+
         self.actor_object = scene_manager.add_object(model=actor_model)
         self.actor_object.transform.set_pos(pos)
         self.actor_object.transform.set_yaw(rotation)
