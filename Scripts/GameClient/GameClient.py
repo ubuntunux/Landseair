@@ -56,7 +56,6 @@ class GameClient:
         self.camera_offset_vertical = 0.0
         self.camera_distance = 10.0
         main_camera = self.scene_manager.main_camera
-        main_camera.transform.set_use_quaternion(False)
         main_camera.transform.set_rotation((0.0, 0.0, 0.0))
         main_camera.transform.euler_to_quaternion()
 
@@ -140,7 +139,7 @@ class GameClient:
             self.game_backend.toggle_mouse_grab()
 
         # camera rotation
-        rotation = player_transform.get_rotation()
+        rotation = player_transform.get_rotation().copy()
         rotation[0] = -rotation[0]
         rotation[1] += PI
         rotation[2] = 0.0
@@ -154,8 +153,7 @@ class GameClient:
         # update player
         player_actor.update_player(self, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw)
 
-        # fire
-        if is_mouse_grab and (btn_left or keydown[Keyboard.SPACE]):
+        if is_mouse_grab and btn_left:
             bullet_actor.fire(player_transform, camera_transform, self.target_actor_distance)
 
         aim_pos = player_actor.get_pos() + player_transform.front * AIM_DISTANCE - camera_transform.get_pos()

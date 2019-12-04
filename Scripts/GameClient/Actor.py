@@ -80,7 +80,10 @@ class BaseActor:
     def __init__(self, scene_manager, resource_manager, actor_model, pos=Float3(), rotation=0.0, scale=1.0, state_machine=None):
         actor_model = resource_manager.get_model(actor_model)
 
-        self.spline_path = resource_manager.get_spline('spline')
+        self.spline_path = scene_manager.add_spline(spline_data='spline')
+        self.spline_path.transform.set_pos(pos)
+        self.spline_path.transform.set_yaw(rotation)
+        self.spline_path.transform.set_scale(scale)
 
         self.actor_object = scene_manager.add_object(model=actor_model)
         self.actor_object.transform.set_pos(pos)
@@ -109,6 +112,7 @@ class BaseActor:
 
     def destroy(self, scene_manager):
         scene_manager.delete_object(self.actor_object.name)
+        scene_manager.delete_object(self.spline_path.name)
 
     def get_center(self):
         return self.actor_object.bound_box.bound_center
@@ -239,6 +243,11 @@ class PlayerActor(BaseActor):
         self.velocity[...] = forward_dir * self.acceleration * FORWARD_MOVE_SPEED
         self.velocity += side_dir * self.side_acceleration * SIDE_MOVE_SPEED
         self.velocity[1] += self.vertical_acceleration * VERTICAL_MOVE_SPEED
+
+        if keydown[Keyboard.SPACE]:
+            self.vertical_acceleration = 0.0
+            self.side_acceleration = 0.0
+            self.acceleration = 0.0
 
         move_delta = self.velocity * delta_time
         actor_pos = old_actor_pos + move_delta
