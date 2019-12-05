@@ -1,7 +1,7 @@
 import math
 from enum import Enum
 
-from PyEngine3D.Utilities import StateMachine, StateItem
+from PyEngine3D.Utilities import *
 
 
 class STATES:
@@ -13,6 +13,23 @@ class StateNone(StateItem):
         actor = state_machine.actor
         t = abs(((state_machine.elapsed_time * 0.1) % 1.0) * 2.0 - 1.0)
         pos0 = actor.spline_path.get_resampling_position(t)
+        delta = pos0 - actor.actor_object.transform.get_pos()
+        delta_direction = normalize(delta)
+        d = np.dot(delta_direction, actor.actor_object.transform.front)
+        if abs(d) < 0.999:
+            apply_axis_y = False
+            if apply_axis_y:
+                actor.actor_object.transform.front[...] = delta_direction
+                actor.actor_object.transform.left[...] = normalize(np.cross(actor.actor_object.transform.up, delta_direction))
+                actor.actor_object.transform.up[...] = normalize(np.cross(delta_direction, actor.actor_object.transform.left))
+            else:
+                actor.actor_object.transform.up[...] = WORLD_UP
+                actor.actor_object.transform.left[...] = normalize(np.cross(actor.actor_object.transform.up, delta_direction))
+                actor.actor_object.transform.front[...] = normalize(np.cross(actor.actor_object.transform.left, actor.actor_object.transform.up))
+            actor.actor_object.transform.rotationMatrix[0][0:3] = actor.actor_object.transform.left
+            actor.actor_object.transform.rotationMatrix[1][0:3] = actor.actor_object.transform.up
+            actor.actor_object.transform.rotationMatrix[2][0:3] = actor.actor_object.transform.front
+
         actor.actor_object.transform.set_pos(pos0)
 
 

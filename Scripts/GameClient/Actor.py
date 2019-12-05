@@ -245,6 +245,7 @@ class PlayerActor(BaseActor):
         self.velocity[1] += self.vertical_acceleration * VERTICAL_MOVE_SPEED
 
         if keydown[Keyboard.SPACE]:
+            game_client.set_cross_hair_center()
             self.vertical_acceleration = 0.0
             self.side_acceleration = 0.0
             self.acceleration = 0.0

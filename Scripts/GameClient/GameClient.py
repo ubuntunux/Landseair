@@ -93,6 +93,10 @@ class GameClient:
         self.crosshair = None
         self.main_viewport.clear_widgets()
 
+    def set_cross_hair_center(self):
+        self.crosshair.x = (self.main_viewport.width - self.crosshair.width) / 2
+        self.crosshair.y = (self.main_viewport.height - self.crosshair.height) / 2
+
     def update_player(self, delta_time):
         keydown = self.game_backend.get_keyboard_pressed()
         keyup = self.game_backend.get_keyboard_released()
