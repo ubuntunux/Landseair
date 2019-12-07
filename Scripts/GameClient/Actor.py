@@ -3,6 +3,7 @@ import numpy as np
 from PyEngine3D.Utilities import *
 from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger, log_level, COMMAND
+from PyEngine3D.Render import Spline3D
 
 from GameClient.Constants import *
 from GameClient.GameState import TankStateMachine
@@ -81,7 +82,7 @@ class BaseActor:
     def __init__(self, scene_manager, resource_manager, actor_model, pos=Float3(), rotation=0.0, scale=1.0, state_machine=None):
         actor_model = resource_manager.get_model(actor_model)
 
-        self.spline_path = scene_manager.add_spline(spline_data='spline')
+        self.spline_path = Spline3D(spline_data=resource_manager.get_spline('spline'))
         self.spline_path.transform.set_pos(pos)
         self.spline_path.transform.set_yaw(rotation)
         self.spline_path.transform.set_scale(scale)
@@ -125,6 +126,9 @@ class BaseActor:
         return self.actor_object.transform
 
     def update_actor(self, game_client, delta_time):
+        if self.spline_path:
+            self.spline_path.update(delta_time)
+
         if self.state_machine is not None:
             self.state_machine.update_state(delta_time)
 
