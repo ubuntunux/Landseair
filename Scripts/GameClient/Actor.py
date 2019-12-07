@@ -76,6 +76,7 @@ class ActorManager:
 
 class BaseActor:
     isPlayer = False
+    apply_axis_y = False
 
     def __init__(self, scene_manager, resource_manager, actor_model, pos=Float3(), rotation=0.0, scale=1.0, state_machine=None):
         actor_model = resource_manager.get_model(actor_model)

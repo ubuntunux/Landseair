@@ -17,8 +17,7 @@ class StateNone(StateItem):
         delta_direction = normalize(delta)
         d = np.dot(delta_direction, actor.actor_object.transform.front)
         if abs(d) < 0.999:
-            apply_axis_y = False
-            if apply_axis_y:
+            if actor.apply_axis_y:
                 actor.actor_object.transform.front[...] = delta_direction
                 actor.actor_object.transform.left[...] = normalize(np.cross(actor.actor_object.transform.up, delta_direction))
                 actor.actor_object.transform.up[...] = normalize(np.cross(delta_direction, actor.actor_object.transform.left))
