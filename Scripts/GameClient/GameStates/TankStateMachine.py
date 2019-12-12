@@ -2,10 +2,7 @@ import math
 from enum import Enum
 
 from PyEngine3D.Utilities import *
-
-
-class STATES:
-    NONE = 0
+from GameClient.GameStates import STATES
 
 
 class StateNone(StateItem):
