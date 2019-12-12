@@ -6,7 +6,7 @@ from PyEngine3D.Common import logger, log_level, COMMAND
 from PyEngine3D.Render import Spline3D
 
 from GameClient.Constants import *
-from GameClient.GameState import TankStateMachine
+from GameClient.GameStates import ShipStateMachine, TankStateMachine
 
 
 class ActorManager:
@@ -29,23 +29,23 @@ class ActorManager:
             # self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00_" + key)
             self.animation_meshes[key] = resource_manager.get_mesh("Plane00")
 
-        self.player_actor = PlayerActor(self.scene_manager, self.resource_manager, actor_model="Plane00", pos=Float3(0.0, 5.0, 0.0), rotation=PI, scale=1.0)
+        self.player_actor = PlayerActor(scene_manager, resource_manager, model="Plane00", pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0))
 
         count = 10
         for i in range(count):
-            pos = np.random.rand(3) * Float3(100.0, 10.0, 100.0)
+            pos = (np.random.rand(3) * 2.0 - 1.0) * Float3(20.0, 5.0, 20.0)
             pos[1] += 5.0
-            rotation = np.random.rand() * TWO_PI
-            actor = BaseActor(scene_manager, resource_manager, actor_model="Plane00", pos=pos, rotation=rotation)
+            rot = Float3(0.0, np.random.rand() * TWO_PI, 0.0)
+            state_machine = ShipStateMachine()
+            actor = BaseActor(scene_manager, resource_manager, model="Plane00", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine)
             self.actors.append(actor)
 
         count = 10
         for i in range(count):
-            pos = np.random.rand(3) * Float3(100.0, 10.0, 100.0)
-            pos[1] += 5.0
-            rotation = np.random.rand() * TWO_PI
+            pos = (np.random.rand(3) * 2.0 - 1.0) * Float3(20.0, 0.0, 20.0)
+            rot = Float3(0.0, np.random.rand() * TWO_PI, 0.0)
             state_machine = TankStateMachine()
-            actor = BaseActor(scene_manager, resource_manager, actor_model="Tank", pos=pos, rotation=rotation, state_machine=state_machine)
+            actor = BaseActor(scene_manager, resource_manager, model="Tank", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine)
             self.actors.append(actor)
 
     def destroy(self):
@@ -79,18 +79,16 @@ class BaseActor:
     isPlayer = False
     apply_axis_y = False
 
-    def __init__(self, scene_manager, resource_manager, actor_model, pos=Float3(), rotation=0.0, scale=1.0, state_machine=None):
-        actor_model = resource_manager.get_model(actor_model)
+    def __init__(self, scene_manager, resource_manager, **datas):
+        model = resource_manager.get_model(datas.get('model'))
+        self.actor_object = scene_manager.add_object(model=model)
+        self.actor_object.transform.set_pos(datas.get('pos', Float3()))
+        self.actor_object.transform.set_rotation(datas.get('rot', Float3()))
+        self.actor_object.transform.set_scale(datas.get('scale', Float3(1.0, 1.0, 1.0)))
 
-        self.spline_path = Spline3D(spline_data=resource_manager.get_spline('spline'))
-        self.spline_path.transform.set_pos(pos)
-        self.spline_path.transform.set_yaw(rotation)
-        self.spline_path.transform.set_scale(scale)
-
-        self.actor_object = scene_manager.add_object(model=actor_model)
-        self.actor_object.transform.set_pos(pos)
-        self.actor_object.transform.set_yaw(rotation)
-        self.actor_object.transform.set_scale(scale)
+        spline_data = resource_manager.get_spline(datas.get('spline_data'))
+        self.spline_path = Spline3D(spline_data=spline_data)
+        self.spline_path.transform.clone(self.actor_object.transform)
 
         self.is_alive = True
         self.hp = 3
@@ -99,7 +97,7 @@ class BaseActor:
         self.vertical_acceleration = 0.0
         self.velocity = Float3(0.0, 0.0, 0.0)
 
-        self.state_machine = state_machine
+        self.state_machine = datas.get('state_machine')
         if self.state_machine is not None:
             self.state_machine.initialize(self)
 

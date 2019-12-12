@@ -11,7 +11,7 @@ class STATES:
 class StateNone(StateItem):
     def on_update(self, state_machine, delta_time):
         actor = state_machine.actor
-        t = abs(((state_machine.elapsed_time * 0.1) % 1.0) * 2.0 - 1.0)
+        t = abs((((id(self) * 0.314515 + state_machine.elapsed_time) * 0.1) % 1.0) * 2.0 - 1.0)
         pos0 = actor.spline_path.get_resampling_position(t)
         delta = pos0 - actor.actor_object.transform.get_pos()
         delta_direction = normalize(delta)
@@ -32,7 +32,7 @@ class StateNone(StateItem):
         actor.actor_object.transform.set_pos(pos0)
 
 
-class TankStateMachine(StateMachine):
+class ShipStateMachine(StateMachine):
     def __init__(self):
         StateMachine.__init__(self)
         self.actor = None
