@@ -11,6 +11,7 @@ from GameClient.GameStates import ShipStateMachine, TankStateMachine
 
 class ActorManager:
     def __init__(self):
+        self.game_client = None
         self.scene_manager = None
         self.resource_manager = None
         self.game_effect_manager = None
@@ -18,7 +19,8 @@ class ActorManager:
         self.actors = []
         self.animation_meshes = {}
 
-    def initialize(self, scene_manager, resource_manager, game_effect_manager):
+    def initialize(self, scene_manager, resource_manager, game_client, game_effect_manager):
+        self.game_client = game_client
         self.scene_manager = scene_manager
         self.resource_manager = resource_manager
         self.game_effect_manager = game_effect_manager
@@ -29,23 +31,23 @@ class ActorManager:
             # self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00_" + key)
             self.animation_meshes[key] = resource_manager.get_mesh("Plane00")
 
-        self.player_actor = PlayerActor(scene_manager, resource_manager, model="Plane00", pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0))
+        self.player_actor = PlayerActor(self, model="Plane00", pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0))
 
-        count = 10
+        count = 1
         for i in range(count):
             pos = (np.random.rand(3) * 2.0 - 1.0) * Float3(20.0, 5.0, 20.0)
             pos[1] += 5.0
             rot = Float3(0.0, np.random.rand() * TWO_PI, 0.0)
             state_machine = ShipStateMachine()
-            actor = BaseActor(scene_manager, resource_manager, model="Plane00", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine)
+            actor = BaseActor(self, model="Plane00", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine)
             self.actors.append(actor)
 
-        count = 10
+        count = 1
         for i in range(count):
             pos = (np.random.rand(3) * 2.0 - 1.0) * Float3(20.0, 0.0, 20.0)
             rot = Float3(0.0, np.random.rand() * TWO_PI, 0.0)
             state_machine = TankStateMachine()
-            actor = BaseActor(scene_manager, resource_manager, model="Tank", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine)
+            actor = BaseActor(self, model="Tank", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine)
             self.actors.append(actor)
 
     def destroy(self):
@@ -79,7 +81,11 @@ class BaseActor:
     isPlayer = False
     apply_axis_y = False
 
-    def __init__(self, scene_manager, resource_manager, **datas):
+    def __init__(self, actor_manager, **datas):
+        self.actor_manager = actor_manager
+        scene_manager = actor_manager.scene_manager
+        resource_manager = actor_manager.resource_manager
+
         model = resource_manager.get_model(datas.get('model'))
         self.actor_object = scene_manager.add_object(model=model)
         self.actor_object.transform.set_pos(datas.get('pos', Float3()))

@@ -13,13 +13,15 @@ class BulletManager:
         self.scene_manager = None
         self.resource_manager = None
         self.game_effect_manager = None
+        self.game_client = None
         self.bullet_actor = None
 
-    def initialize(self, core_manager, scene_manager, resource_manager, game_effect_manager):
+    def initialize(self, core_manager, scene_manager, resource_manager, game_client, game_effect_manager):
         self.core_manager = core_manager
         self.scene_manager = scene_manager
         self.resource_manager = resource_manager
         self.game_effect_manager = game_effect_manager
+        self.game_client = game_client
         self.bullet_actor = BulletActor(scene_manager, resource_manager)
 
     def destroy(self):
@@ -96,17 +98,16 @@ class BulletActor:
                 return True
         return False
 
-    def fire(self, actor_transform, camera_transform, target_actor_distance):
+    def fire(self, fire_pos, fire_direction, camera_transform, target_actor_distance):
         if self.bullet_count < self.max_bullet_count and self.current_fire_term <= 0.0:
             bullet_transform = self.bullet_transforms[self.bullet_count]
             self.bullet_count += 1
 
-            actor_position = actor_transform.get_pos()
-            bullet_position = actor_position + actor_transform.front * self.fire_offset
+            bullet_position = fire_pos + fire_direction * self.fire_offset
             if 0.0 < target_actor_distance:
                 target_position = camera_transform.get_pos() - camera_transform.front * target_actor_distance
             else:
-                target_position = bullet_position + bullet_position - actor_position
+                target_position = bullet_position + bullet_position - fire_pos
             matrix = Matrix4()
             lookat(matrix, bullet_position, target_position, WORLD_UP)
 
@@ -114,7 +115,7 @@ class BulletActor:
             bullet_transform.rotationMatrix[1][:3] = matrix[1][:3]
             bullet_transform.rotationMatrix[2][:3] = matrix[2][:3]
             bullet_transform.matrix_to_vectors()
-            bullet_transform.set_prev_pos(actor_position)
+            bullet_transform.set_prev_pos(fire_pos)
             bullet_transform.set_pos(bullet_position)
             bullet_transform.update_transform()
             self.bullet_object.set_instance_render_count(self.bullet_count)

@@ -13,11 +13,13 @@ class GameEffectManager:
     def __init__(self):
         self.scene_manager = None
         self.resource_manager = None
+        self.game_client = None
         self.effect_instances = []
 
-    def initialize(self, scene_manager, resource_manager):
+    def initialize(self, scene_manager, resource_manager, game_client):
         self.scene_manager = scene_manager
         self.resource_manager = resource_manager
+        self.game_client = game_client
 
     def create_explosion_particle(self, pos):
         effect_info = self.scene_manager.add_effect(name=EXPLOSION_00, effect_info=EXPLOSION_00, pos=pos, scale=(10.0, 10.0, 10.0))
