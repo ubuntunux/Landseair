@@ -14,26 +14,44 @@ class BulletManager:
         self.resource_manager = None
         self.game_effect_manager = None
         self.game_client = None
-        self.bullet_actor = None
+        self.actor_manager = None
+        self.bullets = []
 
-    def initialize(self, core_manager, scene_manager, resource_manager, game_client, game_effect_manager):
+    def initialize(self, core_manager, scene_manager, resource_manager, game_client, game_effect_manager, actor_manager):
         self.core_manager = core_manager
         self.scene_manager = scene_manager
         self.resource_manager = resource_manager
         self.game_effect_manager = game_effect_manager
         self.game_client = game_client
-        self.bullet_actor = BulletActor(scene_manager, resource_manager)
+        self.actor_manager = actor_manager
+        self.bullets = []
+
+    def add_bullet(self):
+        bullet_model = self.resource_manager.get_model("Cube")
+        bullet_object = self.scene_manager.add_object(model=bullet_model, instance_count=BulletActor.max_bullet_count, instance_render_count=0)
+        bullet = BulletActor(bullet_object)
+        self.bullets.append(bullet)
+        return bullet
 
     def destroy(self):
-        self.bullet_actor.destroy(self.scene_manager)
-        self.bullet_actor = None
+        for bullet in self.bullets:
+            bullet.destroy(self.scene_manager)
 
-    def update_bullets(self, delta_time, player_actor_position, actors):
-        for actor in actors:
-            if self.bullet_actor.check_collide(actor):
-                actor.set_damage(self.bullet_actor.damage)
-                self.game_effect_manager.create_damage_particle(actor.get_pos())
-        self.bullet_actor.update_bullet(self.core_manager.debug_line_manager, delta_time, player_actor_position)
+    def set_damage(self, bullet, target_actor):
+        target_actor.set_damage(bullet.damage)
+        self.game_effect_manager.create_damage_particle(target_actor.get_center())
+
+    def update_bullets(self, delta_time, actors):
+        player_actor = self.actor_manager.player_actor
+        for bullet in self.bullets:
+            if bullet.actor is player_actor:
+                for actor in actors:
+                    if bullet.check_collide(actor):
+                        self.set_damage(bullet, actor)
+            else:
+                if bullet.check_collide(player_actor):
+                    self.set_damage(bullet, player_actor)
+            bullet.update_bullet(self.core_manager.debug_line_manager, delta_time)
 
 
 class BulletActor:
@@ -44,10 +62,9 @@ class BulletActor:
     damage = 1
     max_bullet_count = max(10, int(math.ceil((bullet_speed / max_distance) / fire_term)))
 
-    def __init__(self, scene_manager, resource_manager):
-        bullet_model = resource_manager.get_model("Cube")
-
-        self.bullet_object = scene_manager.add_object(model=bullet_model, instance_count=self.max_bullet_count, instance_render_count=0)
+    def __init__(self, bullet_object):
+        self.actor = None
+        self.bullet_object = bullet_object
 
         assert(1 < self.max_bullet_count and self.bullet_object.is_instancing())
 
@@ -57,6 +74,9 @@ class BulletActor:
         self.bullet_count = 0
         self.elapsed_time = 0.0
         self.current_fire_term = 0.0
+
+    def set_actor(self, actor):
+        self.actor = actor
 
     def destroy(self, scene_manager):
         scene_manager.delete_object(self.bullet_object.name)
@@ -121,13 +141,14 @@ class BulletActor:
             self.bullet_object.set_instance_render_count(self.bullet_count)
             self.current_fire_term = self.fire_term
 
-    def update_bullet(self, debug_line_manager, delta_time, player_actor_position):
-        self.bullet_object.transform.set_pos(player_actor_position)
+    def update_bullet(self, debug_line_manager, delta_time):
+        actor_pos = self.actor.actor_object.get_pos()
+        self.bullet_object.transform.set_pos(actor_pos)
 
         bullet_index = 0
         for i in range(self.bullet_count):
             bullet_transform = self.bullet_transforms[bullet_index]
-            if length(bullet_transform.get_pos() - player_actor_position) < self.max_distance:
+            if length(bullet_transform.get_pos() - actor_pos) < self.max_distance:
                 bullet_transform.move_front(self.bullet_speed * delta_time)
                 bullet_transform.update_transform()
 
@@ -136,7 +157,7 @@ class BulletActor:
                 # debug_line_manager.draw_debug_line_3d(bullet_pos0, bullet_pos1, Float4(1.0, 1.0, 0.0, 1.0), 5.0, is_infinite=True)
 
                 self.bullet_object.instance_matrix[i][...] = bullet_transform.matrix
-                matrix_translate(self.bullet_object.instance_matrix[i], *(-player_actor_position))
+                matrix_translate(self.bullet_object.instance_matrix[i], *(-actor_pos))
                 bullet_index += 1
             else:
                 self.destroy_bullet(bullet_index)

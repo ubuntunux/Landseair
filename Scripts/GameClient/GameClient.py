@@ -47,8 +47,8 @@ class GameClient:
         self.resource_manager.open_scene('stage00')
 
         game_client = self
-        self.actor_manager.initialize(self.scene_manager, self.resource_manager, game_client, self.game_effect_manager)
-        self.bullet_manager.initialize(self.core_manager, self.scene_manager, self.resource_manager, game_client, self.game_effect_manager)
+        self.bullet_manager.initialize(self.core_manager, self.scene_manager, self.resource_manager, game_client, self.game_effect_manager, self.actor_manager)
+        self.actor_manager.initialize(self.scene_manager, self.resource_manager, game_client, self.game_effect_manager, self.bullet_manager)
         self.game_effect_manager.initialize(self.scene_manager, self.resource_manager, game_client)
 
         self.camera_pitch_delay = 0.0
@@ -111,7 +111,6 @@ class GameClient:
         screen_height = self.main_viewport.height
         player_actor = self.actor_manager.player_actor
         player_transform = player_actor.get_transform()
-        bullet_actor = self.bullet_manager.bullet_actor
         crosshair_half_width = self.crosshair.width / 2
         crosshair_half_height = self.crosshair.height / 2
 
@@ -159,7 +158,7 @@ class GameClient:
         player_actor.update_player(self, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw)
 
         if is_mouse_grab and btn_left:
-            bullet_actor.fire(player_transform.get_pos(), player_transform.front, camera_transform, self.target_actor_distance)
+            player_actor.bullet.fire(player_transform.get_pos(), player_transform.front, camera_transform, self.target_actor_distance)
 
         aim_pos = player_actor.get_pos() + player_transform.front * AIM_DISTANCE - camera_transform.get_pos()
         aim_pos = np.dot(Float4(*aim_pos, 0.0), camera.view_origin_projection)
@@ -225,5 +224,5 @@ class GameClient:
         self.update_player(delta_time)
         self.actor_manager.update_actors(delta_time)
         self.find_target_actor()
-        self.bullet_manager.update_bullets(delta_time, self.actor_manager.player_actor.get_center(), self.actor_manager.actors)
+        self.bullet_manager.update_bullets(delta_time, self.actor_manager.actors)
         self.game_effect_manager.update()

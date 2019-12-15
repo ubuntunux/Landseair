@@ -61,16 +61,25 @@ class StateFire(StateItem):
         self.state_manager.detection_time = 0.0
 
     def on_update(self, delta_time):
+        player_actor = self.state_manager.player_actor
+        actor = self.state_manager.actor
+        look_at_actor(player_actor, actor, self.state_manager.DECTECTION_ROTATION_SPEED, delta_time)
+
         if self.state_manager.detection_time <= 0.0:
-            player_actor = self.state_manager.player_actor
-            actor = self.state_manager.actor
-
-            look_at_actor(player_actor, actor, self.state_manager.DECTECTION_ROTATION_SPEED, delta_time)
-
             camera_transform = self.state_manager.scene_manager.main_camera.transform
-            pos = actor.actor_object.transform.get_pos()
-            fire_direction = get_direction(player_actor, actor)
-            self.state_manager.bullet_manager.bullet_actor.fire(pos, fire_direction, camera_transform, 100.0)
+            pos = actor.actor_object.get_center()
+            player_pos = player_actor.actor_object.get_center()
+
+            fire_direction = normalize(player_pos - pos)
+            fire_dist_xz = length(Float2(fire_direction[0], fire_direction[2]))
+
+            front_direction = actor.actor_object.transform.front.copy()
+            front_dist_xz = length(Float2(front_direction[0], front_direction[2]))
+
+            fire_direction[0] = (front_direction[0] / front_dist_xz) * fire_dist_xz
+            fire_direction[2] = (front_direction[2] / front_dist_xz) * fire_dist_xz
+
+            self.state_manager.actor.bullet.fire(pos, fire_direction, camera_transform, 0.0)
             self.state_manager.detection_time += self.state_manager.FIRE_DELAY
         else:
             self.state_manager.detection_time -= delta_time
