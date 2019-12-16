@@ -23,7 +23,7 @@ class StatePatrol(StateItem):
         self.state_manager.patrol_rotation_angle = self.state_manager.PATROL_ROTATION_ANGLE.get_uniform()
 
     def on_update(self, delta_time):
-        player_actor = self.state_manager.player_actor
+        player_actor = self.state_manager.actor_manager.player_actor
         actor = self.state_manager.actor
         actor_transform = actor.actor_object.transform
         actor_transform.rotation_yaw(self.state_manager.patrol_rotation_angle * delta_time)
@@ -42,7 +42,7 @@ class StateDetection(StateItem):
         self.state_manager.detection_time = self.state_manager.DETECTION_TIME
 
     def on_update(self, delta_time):
-        player_actor = self.state_manager.player_actor
+        player_actor = self.state_manager.actor_manager.player_actor
         actor = self.state_manager.actor
 
         look_at_actor(player_actor, actor, self.state_manager.DECTECTION_ROTATION_SPEED, delta_time)
@@ -61,7 +61,7 @@ class StateFire(StateItem):
         self.state_manager.detection_time = 0.0
 
     def on_update(self, delta_time):
-        player_actor = self.state_manager.player_actor
+        player_actor = self.state_manager.actor_manager.player_actor
         actor = self.state_manager.actor
         look_at_actor(player_actor, actor, self.state_manager.DECTECTION_ROTATION_SPEED, delta_time)
 

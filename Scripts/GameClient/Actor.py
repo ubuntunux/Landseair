@@ -3,7 +3,7 @@ import numpy as np
 from PyEngine3D.Utilities import *
 from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger, log_level, COMMAND
-from PyEngine3D.Render import Spline3D
+from PyEngine3D.Render import Spline3D, SkeletonActor
 
 from GameClient.Constants import *
 from GameClient.GameStates import ShipStateMachine, TankStateMachine
@@ -33,27 +33,27 @@ class ActorManager:
             # self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00_" + key)
             self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00")
 
+        skeltalActors = self.scene_manager.get_object_list(SkeletonActor)
+        for actor in skeltalActors:
+            if 'Plane00' == actor.model.name and 'Player' != actor.name:
+                bullet = self.bullet_manager.add_bullet()
+                state_machine = ShipStateMachine(game_client)
+                actor = BaseActor(game_client, actor, spline_data='spline', state_machine=state_machine, bullet=bullet)
+                self.actors.append(actor)
+
+        skeltalActors = self.scene_manager.get_object_list(SkeletonActor)
+        for actor in skeltalActors:
+            if 'Tank' == actor.model.name and 'Player' != actor.name:
+                bullet = self.bullet_manager.add_bullet()
+                state_machine = TankStateMachine(game_client)
+                actor = BaseActor(game_client, actor, spline_data='spline', state_machine=state_machine, bullet=bullet)
+                self.actors.append(actor)
+
+        player_model = self.resource_manager.get_model('Plane00')
+        player_actor = self.scene_manager.get_object('Player')
+        player_actor.set_model(player_model)
         bullet = self.bullet_manager.add_bullet()
-        self.player_actor = PlayerActor(game_client, model="Plane00", pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0), bullet=bullet)
-
-        count = 1
-        for i in range(count):
-            pos = (np.random.rand(3) * 2.0 - 1.0) * Float3(20.0, 5.0, 20.0)
-            pos[1] += 5.0
-            rot = Float3(0.0, np.random.rand() * TWO_PI, 0.0)
-            bullet = self.bullet_manager.add_bullet()
-            state_machine = ShipStateMachine(game_client)
-            actor = BaseActor(game_client, model="Plane00", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine, bullet=bullet)
-            self.actors.append(actor)
-
-        count = 1
-        for i in range(count):
-            pos = (np.random.rand(3) * 2.0 - 1.0) * Float3(20.0, 0.0, 20.0)
-            rot = Float3(0.0, np.random.rand() * TWO_PI, 0.0)
-            bullet = self.bullet_manager.add_bullet()
-            state_machine = TankStateMachine(game_client)
-            actor = BaseActor(game_client, model="Tank", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine, bullet=bullet)
-            self.actors.append(actor)
+        self.player_actor = PlayerActor(game_client, player_actor, pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0), bullet=bullet)
 
     def destroy(self):
         self.destroy_actor(self.player_actor)
@@ -92,18 +92,12 @@ class BaseActor:
     is_player = False
     apply_axis_y = False
 
-    def __init__(self, game_client, **datas):
+    def __init__(self, game_client, actor_object, **datas):
         self.game_client = game_client
         self.actor_manager = game_client.actor_manager
-        scene_manager = game_client.scene_manager
         resource_manager = game_client.resource_manager
 
-        model = resource_manager.get_model(datas.get('model'))
-        self.actor_object = scene_manager.add_object(model=model)
-        self.actor_object.transform.set_pos(datas.get('pos', Float3()))
-        self.actor_object.transform.set_rotation(datas.get('rot', Float3()))
-        self.actor_object.transform.set_scale(datas.get('scale', Float3(1.0, 1.0, 1.0)))
-
+        self.actor_object = actor_object
         self.bullet = datas.get('bullet')
         self.bullet.set_actor(self)
 

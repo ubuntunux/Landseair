@@ -47,7 +47,7 @@ class GameClient:
         self.bullet_manager = BulletManager()
         self.game_effect_manager = GameEffectManager()
 
-        self.resource_manager.open_scene('stage00')
+        self.resource_manager.open_scene('stage00', force=True)
 
         game_client = self
         self.bullet_manager.initialize(game_client)
