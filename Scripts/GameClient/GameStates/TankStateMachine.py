@@ -66,7 +66,7 @@ class StateFire(StateItem):
         look_at_actor(player_actor, actor, self.state_manager.DECTECTION_ROTATION_SPEED, delta_time)
 
         if self.state_manager.detection_time <= 0.0:
-            camera_transform = self.state_manager.scene_manager.main_camera.transform
+            camera_transform = self.state_manager.game_client.main_camera.transform
             pos = actor.actor_object.get_center()
             player_pos = player_actor.actor_object.get_center()
 
@@ -94,13 +94,12 @@ class TankStateMachine(StateMachine):
     DETECTION_TIME = 1.0
     FIRE_DELAY = 1.0
 
-    def __init__(self):
+    def __init__(self, game_client):
         StateMachine.__init__(self)
-        self.scene_manager = None
-        self.bullet_manager = None
-        self.actor_manager = None
-        self.player_actor = None
-        self.actor = None
+        self.game_client = game_client
+        self.actor_manager = game_client.actor_manager
+        self.bullet_manager = game_client.bullet_manager
+        self.player_actor = game_client.actor_manager.player_actor
         self.delta = 0.0
         self.elapsed_time = 0.0
         self.idle_time = 0.0
@@ -113,14 +112,10 @@ class TankStateMachine(StateMachine):
         self.add_state(StatePatrol, STATES.PATROL)
         self.add_state(StateDetection, STATES.DETECTION)
         self.add_state(StateFire, STATES.FIRE)
-        self.set_state(STATES.IDLE)
 
     def initialize(self, actor):
-        self.scene_manager = actor.actor_manager.game_client.scene_manager
-        self.actor_manager = actor.actor_manager
-        self.bullet_manager = actor.actor_manager.game_client.bullet_manager
-        self.player_actor = actor.actor_manager.player_actor
         self.actor = actor
+        self.set_state(STATES.IDLE)
 
     def update_state(self, delta_time):
         self.delta = delta_time

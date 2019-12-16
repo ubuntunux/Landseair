@@ -13,6 +13,59 @@ from GameClient.GameEffectManager import GameEffectManager
 from GameClient.Constants import *
 
 
+class CameraShake:
+    MIN_CAMERA_SHAKE_TERM = 0.05
+    MAX_CAMERA_SHAKE_TERM = 0.2
+
+    def __init__(self):
+        self.elapsed_time = 0.0
+        self.prev_camera_shake_time = 0.0
+        self.next_camera_shake_time = 0.0
+        self.total_camera_shake_time = 0.0
+        self.camera_shake_intensity = 0.0
+        self.camera_shake_amount = Float2(0.0, 0.0)
+        self.prev_camera_shake_amount = Float2(0.0, 0.0)
+        self.next_camera_shake_amount = Float2(0.0, 0.0)
+
+    def get_camera_shake(self):
+        return self.camera_shake_amount
+
+    def set_camera_shake(self, total_camera_shake_time, camera_shake_intensity):
+        self.elapsed_time = 0.0
+        self.prev_camera_shake_time = 0.0
+        self.next_camera_shake_time = MIN_CAMERA_SHAKE_TERM + (np.random.random() * (MAX_CAMERA_SHAKE_TERM - MIN_CAMERA_SHAKE_TERM))
+        self.total_camera_shake_time = total_camera_shake_time
+        self.camera_shake_intensity = camera_shake_intensity
+        self.camera_shake_amount[0] = 0.0
+        self.camera_shake_amount[1] = 0.0
+        self.prev_camera_shake_amount[0] = 0.0
+        self.prev_camera_shake_amount[1] = 0.0
+        self.next_camera_shake_amount[0] = (np.random.random() * 2.0 - 1.0) * camera_shake_intensity
+        self.next_camera_shake_amount[1] = (np.random.random() * 2.0 - 1.0) * camera_shake_intensity
+
+    def update(self, delta_time):
+        if self.elapsed_time < self.total_camera_shake_time:
+            if self.elapsed_time < self.next_camera_shake_time:
+                t = max(0.0, min(1.0, (self.next_camera_shake_time - self.elapsed_time) / (self.next_camera_shake_time - self.prev_camera_shake_time)))
+                self.camera_shake_amount[...] = lerp(self.prev_camera_shake_amount, self.next_camera_shake_amount, t)
+
+            self.elapsed_time += delta_time
+            if self.total_camera_shake_time <= self.elapsed_time:
+                self.camera_shake_amount[0] = 0.0
+                self.camera_shake_amount[1] = 0.0
+            elif self.next_camera_shake_time <= self.elapsed_time:
+                self.prev_camera_shake_time = self.next_camera_shake_time
+                self.prev_camera_shake_amount[...] = self.next_camera_shake_amount
+                self.next_camera_shake_time += MIN_CAMERA_SHAKE_TERM + (np.random.random() * (MAX_CAMERA_SHAKE_TERM - MIN_CAMERA_SHAKE_TERM))
+                if self.total_camera_shake_time <= self.next_camera_shake_time:
+                    self.next_camera_shake_time = self.total_camera_shake_time
+                    self.next_camera_shake_amount[0] = 0.0
+                    self.next_camera_shake_amount[1] = 0.0
+                else:
+                    self.next_camera_shake_amount[0] = (np.random.random() * 2.0 - 1.0) * camera_shake_intensity
+                    self.next_camera_shake_amount[1] = (np.random.random() * 2.0 - 1.0) * camera_shake_intensity
+
+
 class GameClient:
     def __init__(self):
         self.core_manager = None
@@ -24,6 +77,7 @@ class GameClient:
         self.actor_manager = None
         self.bullet_manager = None
         self.game_effect_manager = None
+        self.main_camera = None
         self.crosshair = None
         self.player_aim = None
         self.target_actor = None
@@ -47,18 +101,18 @@ class GameClient:
         self.resource_manager.open_scene('stage00')
 
         game_client = self
-        self.bullet_manager.initialize(self.core_manager, self.scene_manager, self.resource_manager, game_client, self.game_effect_manager, self.actor_manager)
-        self.actor_manager.initialize(self.scene_manager, self.resource_manager, game_client, self.game_effect_manager, self.bullet_manager)
-        self.game_effect_manager.initialize(self.scene_manager, self.resource_manager, game_client)
+        self.bullet_manager.initialize(game_client)
+        self.actor_manager.initialize(game_client)
+        self.game_effect_manager.initialize(game_client)
 
         self.camera_pitch_delay = 0.0
         self.camera_yaw_delay = 0.0
         self.camera_offset_horizontal = 0.0
         self.camera_offset_vertical = 0.0
         self.camera_distance = 10.0
-        main_camera = self.scene_manager.main_camera
-        main_camera.transform.set_rotation((0.0, 0.0, 0.0))
-        main_camera.transform.euler_to_quaternion()
+        self.main_camera = self.scene_manager.main_camera
+        self.main_camera.transform.set_rotation((0.0, 0.0, 0.0))
+        self.main_camera.transform.euler_to_quaternion()
 
         self.build_ui()
 
@@ -104,7 +158,7 @@ class GameClient:
         mouse_delta = self.game_backend.mouse_delta
         mouse_pos = self.game_backend.mouse_pos
         btn_left, btn_middle, btn_right = self.game_backend.get_mouse_pressed()
-        camera = self.scene_manager.main_camera
+        camera = self.main_camera
         camera_transform = camera.transform
         is_mouse_grab = self.game_backend.get_mouse_grab()
         screen_width = self.main_viewport.width
@@ -195,7 +249,7 @@ class GameClient:
         camera_transform.set_pos(camera_pos)
 
     def find_target_actor(self):
-        camera_transform = self.scene_manager.main_camera.transform
+        camera_transform = self.main_camera.transform
         camera_pos = camera_transform.get_pos()
         aim_dir = -camera_transform.front
 
@@ -219,6 +273,10 @@ class GameClient:
                         self.target_actor_distance = length(to_actor)
         if self.target_actor is not None:
             self.scene_manager.set_selected_object(self.target_actor.actor_object.name)
+
+    def camera_shake(self, camera_shake_time=0.5, camera_shake_intensity=1.0):
+        self.camera_shake_time = 0.0
+        self.camera_shake_amount = Float2(0.0, 0.0)
 
     def update(self, delta_time):
         self.update_player(delta_time)

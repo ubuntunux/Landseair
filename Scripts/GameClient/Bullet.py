@@ -17,13 +17,13 @@ class BulletManager:
         self.actor_manager = None
         self.bullets = []
 
-    def initialize(self, core_manager, scene_manager, resource_manager, game_client, game_effect_manager, actor_manager):
-        self.core_manager = core_manager
-        self.scene_manager = scene_manager
-        self.resource_manager = resource_manager
-        self.game_effect_manager = game_effect_manager
+    def initialize(self, game_client):
         self.game_client = game_client
-        self.actor_manager = actor_manager
+        self.core_manager = game_client.core_manager
+        self.scene_manager = game_client.scene_manager
+        self.resource_manager = game_client.resource_manager
+        self.game_effect_manager = game_client.game_effect_manager
+        self.actor_manager = game_client.actor_manager
         self.bullets = []
 
     def add_bullet(self):

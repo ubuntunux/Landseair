@@ -20,39 +20,39 @@ class ActorManager:
         self.actors = []
         self.animation_meshes = {}
 
-    def initialize(self, scene_manager, resource_manager, game_client, game_effect_manager, bullet_manager):
+    def initialize(self, game_client):
         self.game_client = game_client
-        self.scene_manager = scene_manager
-        self.resource_manager = resource_manager
-        self.game_effect_manager = game_effect_manager
-        self.bullet_manager = bullet_manager
+        self.scene_manager = game_client.scene_manager
+        self.resource_manager = game_client.resource_manager
+        self.game_effect_manager = game_client.game_effect_manager
+        self.bullet_manager = game_client.bullet_manager
 
         animation_list = ['idle']
 
         for key in animation_list:
             # self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00_" + key)
-            self.animation_meshes[key] = resource_manager.get_mesh("Plane00")
+            self.animation_meshes[key] = self.resource_manager.get_mesh("Plane00")
 
-        bullet = bullet_manager.add_bullet()
-        self.player_actor = PlayerActor(self, model="Plane00", pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0), bullet=bullet)
+        bullet = self.bullet_manager.add_bullet()
+        self.player_actor = PlayerActor(game_client, model="Plane00", pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0), bullet=bullet)
 
         count = 1
         for i in range(count):
             pos = (np.random.rand(3) * 2.0 - 1.0) * Float3(20.0, 5.0, 20.0)
             pos[1] += 5.0
             rot = Float3(0.0, np.random.rand() * TWO_PI, 0.0)
-            bullet = bullet_manager.add_bullet()
-            state_machine = ShipStateMachine()
-            actor = BaseActor(self, model="Plane00", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine, bullet=bullet)
+            bullet = self.bullet_manager.add_bullet()
+            state_machine = ShipStateMachine(game_client)
+            actor = BaseActor(game_client, model="Plane00", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine, bullet=bullet)
             self.actors.append(actor)
 
         count = 1
         for i in range(count):
             pos = (np.random.rand(3) * 2.0 - 1.0) * Float3(20.0, 0.0, 20.0)
             rot = Float3(0.0, np.random.rand() * TWO_PI, 0.0)
-            bullet = bullet_manager.add_bullet()
-            state_machine = TankStateMachine()
-            actor = BaseActor(self, model="Tank", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine, bullet=bullet)
+            bullet = self.bullet_manager.add_bullet()
+            state_machine = TankStateMachine(game_client)
+            actor = BaseActor(game_client, model="Tank", pos=pos, rot=rot, spline_data='spline', state_machine=state_machine, bullet=bullet)
             self.actors.append(actor)
 
     def destroy(self):
@@ -92,10 +92,11 @@ class BaseActor:
     isPlayer = False
     apply_axis_y = False
 
-    def __init__(self, actor_manager, **datas):
-        self.actor_manager = actor_manager
-        scene_manager = actor_manager.scene_manager
-        resource_manager = actor_manager.resource_manager
+    def __init__(self, game_client, **datas):
+        self.game_client = game_client
+        self.actor_manager = game_client.actor_manager
+        scene_manager = game_client.scene_manager
+        resource_manager = game_client.resource_manager
 
         model = resource_manager.get_model(datas.get('model'))
         self.actor_object = scene_manager.add_object(model=model)
@@ -119,7 +120,7 @@ class BaseActor:
 
         self.state_machine = datas.get('state_machine')
         if self.state_machine is not None:
-            self.state_machine.initialize(self)
+            self.state_machine.initialize(actor=self)
 
     def set_dead(self):
         self.is_alive = False

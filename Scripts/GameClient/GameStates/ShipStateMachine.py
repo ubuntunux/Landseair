@@ -30,16 +30,17 @@ class StateNone(StateItem):
 
 
 class ShipStateMachine(StateMachine):
-    def __init__(self):
+    def __init__(self, game_client):
         StateMachine.__init__(self)
+        self.game_client = game_client
         self.actor = None
         self.delta = 0.0
         self.elapsed_time = 0.0
         self.add_state(StateNone, STATES.NONE)
-        self.set_state(STATES.NONE)
 
     def initialize(self, actor):
         self.actor = actor
+        self.set_state(STATES.NONE)
 
     def update_state(self, delta_time):
         self.delta = delta_time
