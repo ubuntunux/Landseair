@@ -89,7 +89,7 @@ class ActorManager:
 
 
 class BaseActor:
-    isPlayer = False
+    is_player = False
     apply_axis_y = False
 
     def __init__(self, game_client, **datas):
@@ -126,6 +126,9 @@ class BaseActor:
         self.is_alive = False
 
     def set_damage(self, damage):
+        if self.is_player:
+            self.game_client.set_camera_shake(damage)
+
         self.hp -= damage
         if self.hp <= 0:
             self.hp = 0
@@ -153,7 +156,7 @@ class BaseActor:
 
 
 class PlayerActor(BaseActor):
-    isPlayer = True
+    is_player = True
 
     def update_player(self, game_client, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw):
         game_backend = game_client.game_backend
