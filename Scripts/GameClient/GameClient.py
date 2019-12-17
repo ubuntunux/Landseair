@@ -18,6 +18,7 @@ class GameClient:
     def __init__(self):
         self.core_manager = None
         self.game_backend = None
+        self.font_manager = None
         self.resource_manager = None
         self.scene_manager = None
         self.viewport_manager = None
@@ -39,6 +40,7 @@ class GameClient:
         logger.info("GameClient::initialize")
 
         self.core_manager = core_manager
+        self.font_manager = core_manager.font_manager
         self.game_backend = core_manager.game_backend
         self.resource_manager = core_manager.resource_manager
         self.scene_manager = core_manager.scene_manager
@@ -105,6 +107,11 @@ class GameClient:
     def clear_ui(self):
         self.crosshair = None
         self.main_viewport.clear_widgets()
+
+    def debug_print(self):
+        if self.target_actor is not None:
+            self.font_manager.log("Target : %s" % self.target_actor.state_machine.get_state_key())
+            self.font_manager.log("\tDistance : %d" % self.target_actor_distance)
 
     def set_cross_hair_center(self):
         self.crosshair.x = (self.main_viewport.width - self.crosshair.width) / 2
@@ -251,3 +258,4 @@ class GameClient:
         self.find_target_actor()
         self.bullet_manager.update_bullets(delta_time, self.actor_manager.actors)
         self.game_effect_manager.update()
+        self.debug_print()

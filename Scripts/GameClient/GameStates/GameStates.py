@@ -1,11 +1,12 @@
 import math
+from enum import Enum
 
 import numpy as np
 
 from PyEngine3D.Utilities import *
 
 
-class STATES:
+class STATES(Enum):
     NONE = 0
     IDLE = 1
     PATROL = 2

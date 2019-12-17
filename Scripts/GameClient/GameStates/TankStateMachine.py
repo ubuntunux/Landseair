@@ -89,7 +89,7 @@ class TankStateMachine(StateMachine):
     IDLE_TIME = RangeVariable(2.0, 3.0)
     PATROL_TIME = RangeVariable(2.0, 3.0)
     PATROL_ROTATION_ANGLE = RangeVariable(-1.5, 1.5)
-    DECTECTION_DISTANCE = 20.0
+    DECTECTION_DISTANCE = 100.0
     DECTECTION_ROTATION_SPEED = 1.0
     DETECTION_TIME = 1.0
     FIRE_DELAY = 1.0
