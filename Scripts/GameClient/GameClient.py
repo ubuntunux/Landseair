@@ -33,6 +33,7 @@ class GameClient:
         self.camera_distance = 0.0
         self.camera_shake = CameraShake()
         self.animation_meshes = {}
+        self.stage = 'stage00'
 
     def initialize(self, core_manager):
         logger.info("GameClient::initialize")
@@ -47,7 +48,7 @@ class GameClient:
         self.bullet_manager = BulletManager()
         self.game_effect_manager = GameEffectManager()
 
-        self.resource_manager.open_scene('stage00', force=True)
+        self.resource_manager.open_scene(self.stage, force=True)
 
         game_client = self
         self.bullet_manager.initialize(game_client)
@@ -77,6 +78,14 @@ class GameClient:
         self.game_backend.set_mouse_grab(False)
         RenderOption.RENDER_GIZMO = True
         RenderOption.RENDER_OBJECT_ID = True
+
+        self.restore_edit_mode()
+
+    def restore_edit_mode(self):
+        camera_transform = TransformObject()
+        camera_transform.clone(self.scene_manager.main_camera.transform)
+        self.resource_manager.open_scene(self.stage, force=True)
+        self.scene_manager.main_camera.transform.clone(camera_transform)
 
     def build_ui(self):
         crosshair_texture = self.resource_manager.get_texture('crosshair')
