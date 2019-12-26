@@ -252,6 +252,9 @@ class GameClient:
         self.camera_shake.set_camera_shake(total_camera_shake_time, camera_shake_intensity)
 
     def update(self, delta_time):
+        stage_actor = self.scene_manager.get_object('stage_00')
+        self.core_manager.renderer.render_heightmap(stage_actor)
+
         self.camera_shake.update(delta_time)
         self.update_player(delta_time)
         self.actor_manager.update_actors(delta_time)
