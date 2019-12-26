@@ -5,7 +5,7 @@ from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger, log_level, COMMAND
 from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
-from PyEngine3D.Render import RenderOption
+from PyEngine3D.Render import RenderOption, RenderTargets
 
 from GameClient.CameraShake import CameraShake
 from GameClient.Actor import ActorManager
@@ -34,7 +34,8 @@ class GameClient:
         self.camera_distance = 0.0
         self.camera_shake = CameraShake()
         self.animation_meshes = {}
-        self.stage = 'stage00'
+        self.stage_actor = None
+        self.height_map_infos = []
 
     def initialize(self, core_manager):
         logger.info("GameClient::initialize")
@@ -50,7 +51,9 @@ class GameClient:
         self.bullet_manager = BulletManager()
         self.game_effect_manager = GameEffectManager()
 
-        self.resource_manager.open_scene(self.stage, force=True)
+        self.resource_manager.open_scene('stage00', force=True)
+
+        self.generate_height_map_info()
 
         game_client = self
         self.bullet_manager.initialize(game_client)
@@ -72,8 +75,19 @@ class GameClient:
         RenderOption.RENDER_GIZMO = False
         RenderOption.RENDER_OBJECT_ID = False
 
+    def generate_height_map_info(self):
+        self.height_map_infos.clear()
+        self.stage_actor = self.scene_manager.get_object('stage_00')
+        self.core_manager.renderer.render_heightmap(self.stage_actor)
+        mipmap_count = RenderTargets.TEMP_HEIGHT_MAP.get_mipmap_count()
+        for level in range(mipmap_count):
+            data = RenderTargets.TEMP_HEIGHT_MAP.get_image_data(level=level)
+            width, height = RenderTargets.TEMP_HEIGHT_MAP.get_mipmap_size(level=level)
+            self.height_map_infos.append((width, height, data))
+
     def exit(self):
         logger.info("GameClient::exit")
+        self.height_map_infos.clear()
         self.clear_ui()
         self.actor_manager.destroy()
         self.bullet_manager.destroy()
@@ -86,7 +100,7 @@ class GameClient:
     def restore_edit_mode(self):
         camera_transform = TransformObject()
         camera_transform.clone(self.scene_manager.main_camera.transform)
-        self.resource_manager.open_scene(self.stage, force=True)
+        self.resource_manager.open_scene(self.scene_manager.get_current_scene_name(), force=True)
         self.scene_manager.main_camera.transform.clone(camera_transform)
 
     def build_ui(self):
@@ -252,9 +266,6 @@ class GameClient:
         self.camera_shake.set_camera_shake(total_camera_shake_time, camera_shake_intensity)
 
     def update(self, delta_time):
-        stage_actor = self.scene_manager.get_object('stage_00')
-        self.core_manager.renderer.render_heightmap(stage_actor)
-
         self.camera_shake.update(delta_time)
         self.update_player(delta_time)
         self.actor_manager.update_actors(delta_time)
