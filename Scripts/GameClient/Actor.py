@@ -275,22 +275,6 @@ class PlayerActor(BaseActor):
         actor_pos = old_actor_pos + move_delta
         actor_pos[1] = min(TOP_POSITION_LIMIT, max(BOTTOM_POSITION_LIMIT, actor_pos[1]))
 
-        width, height, data = self.game_client.height_map_infos[5]
-        bound_min = self.game_client.stage_actor.bound_box.bound_min
-        bound_max = self.game_client.stage_actor.bound_box.bound_max
-        height_map_x = max(0.0, min(1.0, (actor_pos[0] - bound_min[0]) / (bound_max[0] - bound_min[0]))) * float(width - 1)
-        height_map_z = max(0.0, min(1.0, (actor_pos[2] - bound_min[2]) / (bound_max[2] - bound_min[2]))) * float(height - 1)
-        floor_height_map_x = math.floor(height_map_x)
-        ceil_height_map_x = math.ceil(height_map_x)
-        floor_height_map_z = math.floor(height_map_z)
-        ceil_height_map_z = math.ceil(height_map_z)
-        height_bl = data[floor_height_map_z][floor_height_map_x]
-        height_br = data[floor_height_map_z][ceil_height_map_x]
-        height_tl = data[ceil_height_map_z][floor_height_map_x]
-        height_tr = data[ceil_height_map_z][ceil_height_map_x]
-        fract_x = math.fmod(height_map_x, 1.0)
-        fract_z = math.fmod(height_map_z, 1.0)
-        height = lerp(lerp(height_bl, height_br, fract_x), lerp(height_tl, height_tr, fract_x), fract_z)
-        actor_pos[1] = bound_min[1] + (bound_max[1] - bound_min[1]) * height
+        actor_pos[1] = self.game_client.get_height(pos=actor_pos, level=5)
 
         actor_transform.set_pos(actor_pos)
