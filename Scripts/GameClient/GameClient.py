@@ -75,6 +75,8 @@ class GameClient:
         RenderOption.RENDER_GIZMO = False
         RenderOption.RENDER_OBJECT_ID = False
 
+        self.get_lod_level()
+
     def generate_height_map_info(self):
         self.height_map_infos.clear()
         self.stage_actor = self.scene_manager.get_object('stage_00')
@@ -85,23 +87,59 @@ class GameClient:
             width, height = RenderTargets.TEMP_HEIGHT_MAP.get_mipmap_size(level=level)
             self.height_map_infos.append((width, height, data))
 
-    def get_height(self, pos, level):
+    def get_lod_level(self, delta=1.0):
+        bound_min = self.stage_actor.bound_box.bound_min
+        bound_max = self.stage_actor.bound_box.bound_max
+        range_x = bound_max[0] - bound_min[0]
+        range_z = bound_max[2] - bound_min[2]
+
+        for level, (width, height, data) in enumerate(self.height_map_infos):
+            ratio_x = range_x / width
+            ratio_z = range_z / height
+            ratio = max(ratio_x, ratio_z)
+            if delta < ratio:
+                level = max(0, level - 1)
+                return level
+
+    def check_collide(self, current_pos, next_pos):
+        delta_pos = next_pos - current_pos
+        move_length_x = abs(delta_pos[0])
+        move_length_z = abs(delta_pos[2])
+        max_length = max(move_length_x, move_length_z)
+        if max_length == 0.0:
+            return True
+
+        # level = self.get_lod_level(max_length)
+        move_offset = delta_pos / max_length
+        pos = current_pos.copy()
+        for i in range(int(max_length)):
+            height = self.get_height(pos, CHECK_COLLIDE_HEIGHT_MAP_LEVEL, interpolate=False)
+            if pos[1] < height:
+                next_pos[...] = pos
+                return True
+            pos += move_offset
+        return False
+
+    def get_height(self, pos, level, interpolate=True):
         width, height, data = self.height_map_infos[level]
         bound_min = self.stage_actor.bound_box.bound_min
         bound_max = self.stage_actor.bound_box.bound_max
         height_map_x = max(0.0, min(1.0, (pos[0] - bound_min[0]) / (bound_max[0] - bound_min[0]))) * float(width - 1)
         height_map_z = max(0.0, min(1.0, (pos[2] - bound_min[2]) / (bound_max[2] - bound_min[2]))) * float(height - 1)
         floor_height_map_x = math.floor(height_map_x)
-        ceil_height_map_x = math.ceil(height_map_x)
         floor_height_map_z = math.floor(height_map_z)
-        ceil_height_map_z = math.ceil(height_map_z)
-        height_bl = data[floor_height_map_z][floor_height_map_x]
-        height_br = data[floor_height_map_z][ceil_height_map_x]
-        height_tl = data[ceil_height_map_z][floor_height_map_x]
-        height_tr = data[ceil_height_map_z][ceil_height_map_x]
-        fract_x = math.fmod(height_map_x, 1.0)
-        fract_z = math.fmod(height_map_z, 1.0)
-        height = lerp(lerp(height_bl, height_br, fract_x), lerp(height_tl, height_tr, fract_x), fract_z)
+        if interpolate:
+            ceil_height_map_x = math.ceil(height_map_x)
+            ceil_height_map_z = math.ceil(height_map_z)
+            height_bl = data[floor_height_map_z][floor_height_map_x]
+            height_br = data[floor_height_map_z][ceil_height_map_x]
+            height_tl = data[ceil_height_map_z][floor_height_map_x]
+            height_tr = data[ceil_height_map_z][ceil_height_map_x]
+            fract_x = math.fmod(height_map_x, 1.0)
+            fract_z = math.fmod(height_map_z, 1.0)
+            height = lerp(lerp(height_bl, height_br, fract_x), lerp(height_tl, height_tr, fract_x), fract_z)
+        else:
+            height = data[floor_height_map_z][floor_height_map_x]
         return bound_min[1] + (bound_max[1] - bound_min[1]) * height
 
     def exit(self):
@@ -165,6 +203,7 @@ class GameClient:
         player_transform = player_actor.get_transform()
         crosshair_half_width = self.crosshair.width / 2
         crosshair_half_height = self.crosshair.height / 2
+        fixed_aim = True
 
         if is_mouse_grab:
             self.crosshair.x = min(max(-crosshair_half_width, self.crosshair.x + mouse_delta[0]), screen_width - crosshair_half_width)
@@ -210,14 +249,19 @@ class GameClient:
         player_actor.update_player(self, delta_time, crosshair_x_ratio, crosshair_y_ratio, goal_aim_pitch, goal_aim_yaw)
 
         if is_mouse_grab and btn_left:
-            player_actor.bullet.fire(player_transform.get_pos(), player_transform.front, camera_transform, self.target_actor_distance)
+            fire_direction = -camera_transform.front if fixed_aim else player_transform.front
+            player_actor.bullet.fire(player_transform.get_pos(), fire_direction, camera_transform, self.target_actor_distance)
 
-        aim_pos = player_actor.get_pos() + player_transform.front * AIM_DISTANCE - camera_transform.get_pos()
-        aim_pos = np.dot(Float4(*aim_pos, 0.0), camera.view_origin_projection)
-        aim_pos[0] = (aim_pos[0] / aim_pos[3]) * 0.5 + 0.5
-        aim_pos[1] = (aim_pos[1] / aim_pos[3]) * 0.5 + 0.5
-        self.player_aim.x = aim_pos[0] * screen_width - self.player_aim.width / 2
-        self.player_aim.y = aim_pos[1] * screen_height - self.player_aim.height / 2
+        if fixed_aim:
+            self.player_aim.x = (screen_width - self.player_aim.width) / 2
+            self.player_aim.y = (screen_height - self.player_aim.height) / 2
+        else:
+            aim_pos = player_actor.get_pos() + player_transform.front * AIM_DISTANCE - camera_transform.get_pos()
+            aim_pos = np.dot(Float4(*aim_pos, 0.0), camera.view_origin_projection)
+            aim_pos[0] = (aim_pos[0] / aim_pos[3]) * 0.5 + 0.5
+            aim_pos[1] = (aim_pos[1] / aim_pos[3]) * 0.5 + 0.5
+            self.player_aim.x = aim_pos[0] * screen_width - self.player_aim.width / 2
+            self.player_aim.y = aim_pos[1] * screen_height - self.player_aim.height / 2
 
         camera_pos = player_actor.get_pos() + camera_transform.front * self.camera_distance
         camera_offset_speed = CAMERA_OFFSET_SPEED * delta_time

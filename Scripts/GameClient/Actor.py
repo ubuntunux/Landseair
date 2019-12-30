@@ -275,6 +275,8 @@ class PlayerActor(BaseActor):
         actor_pos = old_actor_pos + move_delta
         actor_pos[1] = min(TOP_POSITION_LIMIT, max(BOTTOM_POSITION_LIMIT, actor_pos[1]))
 
-        actor_pos[1] = self.game_client.get_height(pos=actor_pos, level=5)
+        height = self.game_client.get_height(pos=actor_pos, level=0)
+        if actor_pos[1] < height:
+            actor_pos[1] = height
 
         actor_transform.set_pos(actor_pos)
