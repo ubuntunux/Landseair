@@ -7,6 +7,7 @@ from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
 from PyEngine3D.Render import RenderOption, RenderTargets
 
+from GameClient.GameUI import GameUIManager
 from GameClient.CameraShake import CameraShake
 from GameClient.Actor import ActorManager
 from GameClient.Bullet import BulletManager
@@ -18,6 +19,7 @@ class GameClient:
     def __init__(self):
         self.core_manager = None
         self.game_backend = None
+        self.game_ui_manager = None
         self.font_manager = None
         self.resource_manager = None
         self.scene_manager = None
@@ -47,15 +49,19 @@ class GameClient:
         self.scene_manager = core_manager.scene_manager
         self.viewport_manager = core_manager.viewport_manager
         self.main_viewport = core_manager.viewport_manager.main_viewport
+        self.game_ui_manager = GameUIManager()
         self.actor_manager = ActorManager()
         self.bullet_manager = BulletManager()
         self.game_effect_manager = GameEffectManager()
+
+        self.core_manager.set_render_font(False)
 
         self.resource_manager.open_scene('stage00', force=True)
 
         self.generate_height_map_info()
 
         game_client = self
+        self.game_ui_manager.initialize(game_client)
         self.bullet_manager.initialize(game_client)
         self.actor_manager.initialize(game_client)
         self.game_effect_manager.initialize(game_client)
@@ -146,6 +152,7 @@ class GameClient:
         logger.info("GameClient::exit")
         self.height_map_infos.clear()
         self.clear_ui()
+        self.game_ui_manager.destroy()
         self.actor_manager.destroy()
         self.bullet_manager.destroy()
         self.game_backend.set_mouse_grab(False)
@@ -335,4 +342,5 @@ class GameClient:
         self.find_target_actor()
         self.bullet_manager.update_bullets(delta_time, self.actor_manager.actors)
         self.game_effect_manager.update()
+        self.game_ui_manager.update(delta_time)
         self.debug_print()
