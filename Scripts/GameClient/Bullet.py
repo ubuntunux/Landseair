@@ -1,4 +1,5 @@
 import math
+import random
 
 from PyEngine3D.Utilities import *
 from PyEngine3D.App.GameBackend import Keyboard
@@ -11,6 +12,7 @@ class BulletManager:
     def __init__(self):
         self.core_manager = None
         self.scene_manager = None
+        self.sound_manager = None
         self.resource_manager = None
         self.game_effect_manager = None
         self.game_client = None
@@ -20,6 +22,7 @@ class BulletManager:
     def initialize(self, game_client):
         self.game_client = game_client
         self.core_manager = game_client.core_manager
+        self.sound_manager = game_client.sound_manager
         self.scene_manager = game_client.scene_manager
         self.resource_manager = game_client.resource_manager
         self.game_effect_manager = game_client.game_effect_manager
@@ -55,7 +58,7 @@ class BulletManager:
 
 class BulletActor:
     fire_offset = 0.5
-    fire_term = 0.3
+    fire_term = 0.1
     max_distance = 1000.0
     bullet_speed = 1000.0
     damage = 1
@@ -64,6 +67,7 @@ class BulletActor:
     def __init__(self, bullet_manager, bullet_object):
         self.bullet_manager = bullet_manager
         self.game_client = bullet_manager.game_client
+        self.sound_manager = bullet_manager.sound_manager
         self.game_effect_manager = self.game_client.game_effect_manager
         self.actor = None
         self.bullet_object = bullet_object
@@ -92,7 +96,9 @@ class BulletActor:
     def destroy_bullet(self, index, create_effect=False):
         if index < self.bullet_count:
             if create_effect:
-                self.game_effect_manager.create_damage_particle(self.bullet_transforms[index].get_pos())
+                destroy_position = self.bullet_transforms[index].get_pos()
+                self.game_effect_manager.create_damage_particle(destroy_position)
+                self.sound_manager.play_sound(random.choice(SOUND_BULLET_HITS), volume=0.2, position=destroy_position)
 
             last_index = self.bullet_count - 1
             if 0 < last_index:
@@ -129,6 +135,10 @@ class BulletActor:
             self.bullet_count += 1
 
             bullet_position = fire_pos + fire_direction * self.fire_offset
+
+            # fire sound
+            self.sound_manager.play_sound(SOUND_FIRE, position=bullet_position)
+
             if 0.0 < target_actor_distance:
                 target_position = camera_transform.get_pos() - camera_transform.front * target_actor_distance
             else:

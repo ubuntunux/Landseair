@@ -40,3 +40,10 @@ CAMERA_OFFSET_Y = 4.0
 # UI
 AIM_DISTANCE = 100000.0
 ZOOM_SPEED = 5.0
+
+# Resources
+SOUND_EXPLOSION = 'explode_02'
+SOUND_FIRE = 'assaultrifle1'
+SOUND_BULLET_HITS = ['Bullet_Metal_01', 'Bullet_Metal_02', 'Bullet_Metal_03']
+SOUND_BGM = 'game_load'
+SOUND_BEEP_WANING = 'beep_warning'

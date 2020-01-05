@@ -4,6 +4,7 @@ from enum import Enum
 import numpy as np
 
 from PyEngine3D.Utilities import *
+from GameClient.Constants import *
 from GameClient.GameStates import *
 
 
@@ -40,6 +41,7 @@ class StatePatrol(StateItem):
 class StateDetection(StateItem):
     def on_enter(self):
         self.state_manager.detection_time = self.state_manager.DETECTION_TIME
+        self.state_manager.sound_manager.play_sound(SOUND_BEEP_WANING)
 
     def on_update(self, delta_time):
         player_actor = self.state_manager.actor_manager.player_actor
@@ -97,6 +99,7 @@ class TankStateMachine(StateMachine):
     def __init__(self, game_client):
         StateMachine.__init__(self)
         self.game_client = game_client
+        self.sound_manager = game_client.sound_manager
         self.actor_manager = game_client.actor_manager
         self.bullet_manager = game_client.bullet_manager
         self.player_actor = game_client.actor_manager.player_actor

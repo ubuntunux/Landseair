@@ -20,6 +20,7 @@ class GameClient:
         self.core_manager = None
         self.game_backend = None
         self.game_ui_manager = None
+        self.sound_manager = None
         self.font_manager = None
         self.resource_manager = None
         self.scene_manager = None
@@ -45,6 +46,7 @@ class GameClient:
         self.core_manager = core_manager
         self.font_manager = core_manager.font_manager
         self.game_backend = core_manager.game_backend
+        self.sound_manager = core_manager.sound_manager
         self.resource_manager = core_manager.resource_manager
         self.scene_manager = core_manager.scene_manager
         self.viewport_manager = core_manager.viewport_manager
@@ -82,6 +84,8 @@ class GameClient:
         RenderOption.RENDER_OBJECT_ID = False
 
         self.get_lod_level()
+
+        self.sound_manager.play_music(SOUND_BGM, volume=0.5)
 
     def generate_height_map_info(self):
         self.height_map_infos.clear()
@@ -150,6 +154,7 @@ class GameClient:
 
     def exit(self):
         logger.info("GameClient::exit")
+        self.sound_manager.clear()
         self.height_map_infos.clear()
         self.clear_ui()
         self.game_ui_manager.destroy()
@@ -335,6 +340,11 @@ class GameClient:
         camera_shake_intensity *= self.main_viewport.width / 1024
         self.camera_shake.set_camera_shake(total_camera_shake_time, camera_shake_intensity)
 
+    def update_listener(self):
+        listener_actor = self.actor_manager.player_actor.actor_object
+        self.sound_manager.set_listener_position(listener_actor.transform.get_pos())
+        self.sound_manager.set_listener_forward(listener_actor.transform.front)
+
     def update(self, delta_time):
         self.camera_shake.update(delta_time)
         self.update_player(delta_time)
@@ -343,4 +353,5 @@ class GameClient:
         self.bullet_manager.update_bullets(delta_time, self.actor_manager.actors)
         self.game_effect_manager.update()
         self.game_ui_manager.update(delta_time)
+        self.update_listener()
         self.debug_print()

@@ -14,6 +14,7 @@ class ActorManager:
         self.game_client = None
         self.scene_manager = None
         self.resource_manager = None
+        self.sound_manager = None
         self.game_effect_manager = None
         self.bullet_manager = None
         self.player_actor = None
@@ -24,6 +25,7 @@ class ActorManager:
         self.game_client = game_client
         self.scene_manager = game_client.scene_manager
         self.resource_manager = game_client.resource_manager
+        self.sound_manager = game_client.sound_manager
         self.game_effect_manager = game_client.game_effect_manager
         self.bullet_manager = game_client.bullet_manager
 
@@ -63,15 +65,18 @@ class ActorManager:
             self.destroy_actor(actor)
         self.actors = []
 
-    def destroy_actor(self, actor):
+    def destroy_actor(self, actor, create_effect=False):
+        if create_effect:
+            self.game_effect_manager.create_explosion_particle(actor.get_pos())
+            self.sound_manager.play_sound(SOUND_EXPLOSION, position=actor.get_pos())
+
         actor.destroy(self.scene_manager)
 
     def update_actor(self, actor, delta_time):
         if actor.is_alive:
             actor.update_actor(self, delta_time)
         else:
-            self.game_effect_manager.create_explosion_particle(actor.get_pos())
-            self.destroy_actor(actor)
+            self.destroy_actor(actor, create_effect=True)
 
     def update_actors(self, delta_time):
         if self.player_actor.is_alive:
