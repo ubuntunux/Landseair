@@ -87,6 +87,13 @@ class GameClient:
 
         self.sound_manager.play_music(SOUND_BGM, volume=0.5)
 
+    def to_2d_position(self, position):
+        relative_position = position - self.main_camera.transform.get_pos()
+        proj_pos = np.dot(Float4(*relative_position, 0.0), self.main_camera.view_origin_projection)
+        proj_pos[0] = (proj_pos[0] / proj_pos[3]) * 0.5 + 0.5
+        proj_pos[1] = (proj_pos[1] / proj_pos[3]) * 0.5 + 0.5
+        return proj_pos[0] * self.main_viewport.width, proj_pos[1] * self.main_viewport.height
+
     def generate_height_map_info(self):
         self.height_map_infos.clear()
         self.stage_actor = self.scene_manager.get_object('stage_00')
@@ -155,7 +162,7 @@ class GameClient:
     def exit(self):
         logger.info("GameClient::exit")
         self.sound_manager.clear()
-        self.resource_manager.sound_loader.close()
+        self.resource_manager.sound_loader.clear()
         self.height_map_infos.clear()
         self.clear_ui()
         self.game_ui_manager.destroy()

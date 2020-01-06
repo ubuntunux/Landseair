@@ -2,7 +2,8 @@ import math
 from enum import Enum
 
 from PyEngine3D.Utilities import *
-from GameClient.GameStates import STATES
+from GameClient.Constants import *
+from GameClient.GameStates import *
 
 
 class StateNone(StateItem):
@@ -29,17 +30,14 @@ class StateNone(StateItem):
         actor.actor_object.transform.set_pos(pos0)
 
 
-class ShipStateMachine(StateMachine):
+class ShipStateMachine(BaseStateMachine):
     def __init__(self, game_client):
-        StateMachine.__init__(self)
-        self.game_client = game_client
-        self.actor = None
-        self.delta = 0.0
-        self.elapsed_time = 0.0
+        BaseStateMachine.__init__(self, game_client)
         self.add_state(StateNone, STATES.NONE)
 
     def initialize(self, actor):
-        self.actor = actor
+        BaseStateMachine.initialize(self, actor)
+
         self.set_state(STATES.NONE)
 
     def update_state(self, delta_time):

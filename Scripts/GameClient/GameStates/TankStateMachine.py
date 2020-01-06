@@ -41,7 +41,11 @@ class StatePatrol(StateItem):
 class StateDetection(StateItem):
     def on_enter(self):
         self.state_manager.detection_time = self.state_manager.DETECTION_TIME
-        self.state_manager.sound_manager.play_sound(SOUND_BEEP_WANING)
+
+        actor_pos = self.state_manager.get_actor_pos()
+        self.state_manager.sound_manager.play_sound(SOUND_BEEP_WANING, position=actor_pos)
+        icon_pos = actor_pos + Float3(0.0, 2.0, 0.0)
+        self.state_manager.game_ui_manager.create_game_icon_3d(TEXTURE_ALERT, icon_pos)
 
     def on_update(self, delta_time):
         player_actor = self.state_manager.actor_manager.player_actor
@@ -87,7 +91,7 @@ class StateFire(StateItem):
             self.state_manager.detection_time -= delta_time
 
 
-class TankStateMachine(StateMachine):
+class TankStateMachine(BaseStateMachine):
     IDLE_TIME = RangeVariable(2.0, 3.0)
     PATROL_TIME = RangeVariable(2.0, 3.0)
     PATROL_ROTATION_ANGLE = RangeVariable(-1.5, 1.5)
@@ -97,14 +101,8 @@ class TankStateMachine(StateMachine):
     FIRE_DELAY = 1.0
 
     def __init__(self, game_client):
-        StateMachine.__init__(self)
-        self.game_client = game_client
-        self.sound_manager = game_client.sound_manager
-        self.actor_manager = game_client.actor_manager
-        self.bullet_manager = game_client.bullet_manager
-        self.player_actor = game_client.actor_manager.player_actor
-        self.delta = 0.0
-        self.elapsed_time = 0.0
+        BaseStateMachine.__init__(self, game_client)
+
         self.idle_time = 0.0
         self.patrol_time = 0.0
         self.patrol_rotation_angle = 0.0
@@ -117,7 +115,8 @@ class TankStateMachine(StateMachine):
         self.add_state(StateFire, STATES.FIRE)
 
     def initialize(self, actor):
-        self.actor = actor
+        BaseStateMachine.initialize(self, actor)
+
         self.set_state(STATES.IDLE)
 
     def update_state(self, delta_time):

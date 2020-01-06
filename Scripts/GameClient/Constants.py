@@ -47,3 +47,5 @@ SOUND_FIRE = 'assaultrifle1'
 SOUND_BULLET_HITS = ['Bullet_Metal_01', 'Bullet_Metal_02', 'Bullet_Metal_03']
 SOUND_BGM = 'game_load'
 SOUND_BEEP_WANING = 'beep_warning'
+
+TEXTURE_ALERT = 'alert'
