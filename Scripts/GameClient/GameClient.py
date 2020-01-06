@@ -155,6 +155,7 @@ class GameClient:
     def exit(self):
         logger.info("GameClient::exit")
         self.sound_manager.clear()
+        self.resource_manager.sound_loader.close()
         self.height_map_infos.clear()
         self.clear_ui()
         self.game_ui_manager.destroy()
