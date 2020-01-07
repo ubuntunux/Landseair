@@ -1,7 +1,14 @@
+from enum import Enum
+
 from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
+from GameClient.Constants import *
 
 game_ui_manager = None
+
+
+class GameIconTypes(Enum):
+    ALERT = 0
 
 
 class GameUIManager:
@@ -33,9 +40,13 @@ class GameUIManager:
         self.target_hp_bar = None
         self.icon_3d_list = []
 
-    def create_game_icon_3d(self, texture_name, position):
-        icon_3d = GameUI_Icon3D(texture_name, position)
-        self.icon_3d_list.append(icon_3d)
+    def create_game_icon_3d(self, game_icon_type, position):
+        if GameIconTypes.ALERT == game_icon_type:
+            icon_3d = GameUI_Icon3D(TEXTURE_ALERT, position)
+        else:
+            icon_3d = None
+        if icon_3d is not None:
+            self.icon_3d_list.append(icon_3d)
         return icon_3d
 
     def update(self, dt):

@@ -6,6 +6,7 @@ import numpy as np
 from PyEngine3D.Utilities import *
 from GameClient.Constants import *
 from GameClient.GameStates import *
+from GameClient.GameUI import GameIconTypes
 
 
 class StateIdle(StateItem):
@@ -45,7 +46,7 @@ class StateDetection(StateItem):
         actor_pos = self.state_manager.get_actor_pos()
         self.state_manager.sound_manager.play_sound(SOUND_BEEP_WANING, position=actor_pos)
         icon_pos = actor_pos + Float3(0.0, 2.0, 0.0)
-        self.state_manager.game_ui_manager.create_game_icon_3d(TEXTURE_ALERT, icon_pos)
+        self.state_manager.game_ui_manager.create_game_icon_3d(GameIconTypes.ALERT, icon_pos)
 
     def on_update(self, delta_time):
         player_actor = self.state_manager.actor_manager.player_actor
