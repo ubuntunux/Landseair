@@ -1,4 +1,6 @@
 import sys
+import math
+
 import numpy as np
 
 from PyEngine3D.App.GameBackend import Keyboard
@@ -83,7 +85,22 @@ class GameClient:
         RenderOption.RENDER_GIZMO = False
         RenderOption.RENDER_OBJECT_ID = False
 
-        self.get_lod_level()
+        bound_min = self.stage_actor.bound_box.bound_min
+        bound_max = self.stage_actor.bound_box.bound_max
+        range_x = bound_max[0] - bound_min[0]
+        range_z = bound_max[2] - bound_min[2]
+
+        width, height, data = self.height_map_infos[0]
+
+        print("HeightMapWorld", range_x, range_z)
+        print("HeightMapTexture", width, height, len(self.height_map_infos))
+        for i, (width, height, data) in enumerate(self.height_map_infos):
+            print("Lod :", i, width, height, range_x / width, range_z / height)
+
+        xs = [0.2, 1.3, 4.5, 10.6, 13.5, 20.3, 40.2, 90.65, 120.3, 220.0, 550, 1204]
+        for x in xs:
+            print("")
+            self.get_lod_level(x, x)
 
         self.sound_manager.play_music(SOUND_BGM, volume=0.5)
 
@@ -104,32 +121,41 @@ class GameClient:
             width, height = RenderTargets.TEMP_HEIGHT_MAP.get_mipmap_size(level=level)
             self.height_map_infos.append((width, height, data))
 
-    def get_lod_level(self, delta=1.0):
+    def get_lod_level(self, delta_x, delta_z):
         bound_min = self.stage_actor.bound_box.bound_min
         bound_max = self.stage_actor.bound_box.bound_max
         range_x = bound_max[0] - bound_min[0]
         range_z = bound_max[2] - bound_min[2]
 
-        for level, (width, height, data) in enumerate(self.height_map_infos):
-            ratio_x = range_x / width
-            ratio_z = range_z / height
-            ratio = max(ratio_x, ratio_z)
-            if delta < ratio:
-                level = max(0, level - 1)
-                return level
+        lod_count = len(self.height_map_infos)
+        width, height, data = self.height_map_infos[0]
+        pixel_width = max(1, width * delta_x / range_x)
+        pixel_height = max(1, height * delta_y / range_z)
+        # calc_level = max(0, min(lod_count, math.ceil(math.log2(min(pixel_width, pixel_height)))) - 1)
+        # print("get_lod_level0", delta, calc_level)
+        print("TODO")
 
     def check_collide(self, current_pos, next_pos):
         delta_pos = next_pos - current_pos
         move_length_x = abs(delta_pos[0])
         move_length_z = abs(delta_pos[2])
-        max_length = max(move_length_x, move_length_z)
-        if max_length == 0.0:
-            return True
 
-        # level = self.get_lod_level(max_length)
-        move_offset = delta_pos / max_length
+        bound_min = self.stage_actor.bound_box.bound_min
+        bound_max = self.stage_actor.bound_box.bound_max
+        range_x = bound_max[0] - bound_min[0]
+        range_z = bound_max[2] - bound_min[2]
+
+        width, height, data = self.height_map_infos[CHECK_COLLIDE_HEIGHT_MAP_LEVEL]
+        pixel_x = math.ceil(width * move_length_x / range_x)
+        pixel_z = math.ceil(height * move_length_z / range_z)
+        pixe_count = int(max(pixel_x, pixel_z))
+
+        # TODO : First, highest lod level collide check
+
+        # Second : check detail collde
+        move_offset = delta_pos / pixe_count
         pos = current_pos.copy()
-        for i in range(int(max_length)):
+        for i in range(pixe_count):
             height = self.get_height(pos, CHECK_COLLIDE_HEIGHT_MAP_LEVEL, interpolate=False)
             if pos[1] < height:
                 next_pos[...] = pos

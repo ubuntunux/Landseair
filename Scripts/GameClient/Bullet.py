@@ -71,6 +71,7 @@ class BulletActor:
         self.game_effect_manager = self.game_client.game_effect_manager
         self.actor = None
         self.bullet_object = bullet_object
+        self.destroy_position = None
 
         assert(1 < self.max_bullet_count and self.bullet_object.is_instancing())
 
@@ -96,7 +97,10 @@ class BulletActor:
     def destroy_bullet(self, index, create_effect=False):
         if index < self.bullet_count:
             if create_effect:
-                destroy_position = self.bullet_transforms[index].get_pos()
+                if self.destroy_position is not None:
+                    destroy_position = self.destroy_position
+                else:
+                    destroy_position = self.bullet_transforms[index].get_pos()
                 self.game_effect_manager.create_damage_particle(destroy_position)
                 self.sound_manager.play_sound(random.choice(SOUND_BULLET_HITS), volume=0.2, position=destroy_position)
 
@@ -121,9 +125,11 @@ class BulletActor:
                 collide = True
             elif np.dot(to_actor0, to_actor1) <= 0.0:
                 bullet_dir = normalize(bullet_pos1 - bullet_pos0)
-                d = length(to_actor0 - bullet_dir * np.dot(to_actor0, bullet_dir))
+                bullet_move_path = bullet_dir * np.dot(to_actor0, bullet_dir)
+                d = length(to_actor0 - bullet_move_path)
                 if d <= radius:
                     collide = True
+                    self.destroy_position = bullet_pos0 + bullet_move_path
             if collide:
                 self.destroy_bullet(i, create_effect=True)
                 return True
