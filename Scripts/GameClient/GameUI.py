@@ -51,8 +51,8 @@ class GameUIManager:
         return icon_3d
 
     def update(self, dt):
-        self.player_hp_bar.update(dt)
-        self.target_hp_bar.update(dt)
+        self.player_hp_bar.update(dt, self.actor_manager.player_actor)
+        self.target_hp_bar.update(dt, self.game_client.target_actor)
 
         index = 0
         icon_count = len(self.icon_3d_list)
@@ -69,27 +69,26 @@ class GameUI_HPBar:
     def __init__(self, offset):
         main_viewport = game_ui_manager.main_viewport
 
-        pos_x = 15.0
-        pos_y = main_viewport.height + offset
-
         self.hp_bar_text = Widget(name="hp_bar_text", width=200.0, height=15.0, text="hp_bar_text", font_size=12)
-        self.hp_bar_text.x = pos_x
-        self.hp_bar_text.y = pos_y
 
         self.hp_bar_background = Widget(name="hp_bar_background", width=200.0, height=25.0, color=Float4(0.0, 0.0, 0.0, 0.5))
-        self.hp_bar_background.x = pos_x
-        self.hp_bar_background.y = self.hp_bar_text.y - self.hp_bar_background.height - 5
+        self.hp_bar_background.y = -(self.hp_bar_background.height + 5)
 
         padding = 5
         self.hp_bar = Widget(name="hp_bar", width=self.hp_bar_background.width - padding * 2, height=self.hp_bar_background.height - padding * 2, color=Float4(1.0, 1.0, 0.3, 0.8))
         self.hp_bar.x = self.hp_bar_background.x + padding
         self.hp_bar.y = self.hp_bar_background.y + padding
 
-        main_viewport.add_widget(self.hp_bar_background)
-        main_viewport.add_widget(self.hp_bar)
-        main_viewport.add_widget(self.hp_bar_text)
+        pos_x = 15.0
+        pos_y = main_viewport.height + offset
+        self.layout = Widget(x=pos_x, y=pos_y)
 
-    def update(self, dt):
+        self.layout.add_widget(self.hp_bar_background)
+        self.layout.add_widget(self.hp_bar)
+        self.layout.add_widget(self.hp_bar_text)
+        main_viewport.add_widget(self.layout)
+
+    def update(self, dt, actor):
         pass
 
 
