@@ -130,7 +130,7 @@ class GameClient:
         lod_count = len(self.height_map_infos)
         width, height, data = self.height_map_infos[0]
         pixel_width = max(1, width * delta_x / range_x)
-        pixel_height = max(1, height * delta_y / range_z)
+        pixel_height = max(1, height * delta_z / range_z)
         # calc_level = max(0, min(lod_count, math.ceil(math.log2(min(pixel_width, pixel_height)))) - 1)
         # print("get_lod_level0", delta, calc_level)
         print("TODO")
