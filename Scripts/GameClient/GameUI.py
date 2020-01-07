@@ -1,4 +1,5 @@
 from enum import Enum
+import math
 
 from PyEngine3D.UI import Widget
 from PyEngine3D.Utilities import *
@@ -98,6 +99,7 @@ class GameUI_Icon3D:
     def __init__(self, texture_name, posisiton):
         self.posisiton = posisiton
         self.life_time = 1.0
+        self.flicking_speed = 2.0
 
         size = 50.0
         texture = game_ui_manager.resource_manager.get_texture(texture_name)
@@ -119,6 +121,9 @@ class GameUI_Icon3D:
         self.update_position()
 
         self.life_time -= dt
+
+        if 0.0 < self.flicking_speed:
+            self.icon.opacity = abs(math.fmod(self.life_time * self.flicking_speed, 1.0) * 2.0 - 1.0)
 
         if self.life_time <= 0.0:
             game_ui_manager.main_viewport.remove_widget(self.icon)
