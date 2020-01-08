@@ -125,11 +125,12 @@ class BulletActor:
                 collide = True
             elif np.dot(to_actor0, to_actor1) <= 0.0:
                 bullet_dir = normalize(bullet_pos1 - bullet_pos0)
-                bullet_move_path = bullet_dir * np.dot(to_actor0, bullet_dir)
+                bullet_move_length = np.dot(to_actor0, bullet_dir)
+                bullet_move_path = bullet_dir * bullet_move_length
                 d = length(to_actor0 - bullet_move_path)
                 if d <= radius:
+                    self.destroy_position = bound_box_pos + to_actor0 - bullet_move_path
                     collide = True
-                    self.destroy_position = bullet_pos0 + bullet_move_path
             if collide:
                 self.destroy_bullet(i, create_effect=True)
                 return True
