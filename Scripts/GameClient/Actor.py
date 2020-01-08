@@ -40,7 +40,7 @@ class ActorManager:
             if 'Plane00' == actor.model.name and 'Player' != actor.name:
                 bullet = self.bullet_manager.add_bullet()
                 state_machine = ShipStateMachine(game_client)
-                actor = BaseActor(game_client, actor, spline_data='spline', state_machine=state_machine, bullet=bullet)
+                actor = BaseActor(actor.name, game_client, actor, spline_data='spline', state_machine=state_machine, bullet=bullet)
                 self.actors.append(actor)
 
         skeltalActors = self.scene_manager.get_object_list(SkeletonActor)
@@ -48,14 +48,14 @@ class ActorManager:
             if 'Tank' == actor.model.name and 'Player' != actor.name:
                 bullet = self.bullet_manager.add_bullet()
                 state_machine = TankStateMachine(game_client)
-                actor = BaseActor(game_client, actor, spline_data='spline', state_machine=state_machine, bullet=bullet)
+                actor = BaseActor(actor.name, game_client, actor, spline_data='spline', state_machine=state_machine, bullet=bullet)
                 self.actors.append(actor)
 
         player_model = self.resource_manager.get_model('Plane00')
         player_actor = self.scene_manager.get_object('Player')
         player_actor.set_model(player_model)
         bullet = self.bullet_manager.add_bullet()
-        self.player_actor = PlayerActor(game_client, player_actor, pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0), bullet=bullet)
+        self.player_actor = PlayerActor("Player", game_client, player_actor, pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0), bullet=bullet)
 
     def destroy(self):
         self.destroy_actor(self.player_actor)
@@ -97,7 +97,8 @@ class BaseActor:
     is_player = False
     apply_axis_y = False
 
-    def __init__(self, game_client, actor_object, **datas):
+    def __init__(self, name, game_client, actor_object, **datas):
+        self.name = name
         self.game_client = game_client
         self.actor_manager = game_client.actor_manager
         resource_manager = game_client.resource_manager
@@ -111,7 +112,8 @@ class BaseActor:
         self.spline_path.transform.clone(self.actor_object.transform)
 
         self.is_alive = True
-        self.hp = 3
+        self.max_hp = 5
+        self.hp = self.max_hp
         self.acceleration = 1.0
         self.side_acceleration = 0.0
         self.vertical_acceleration = 0.0
@@ -127,6 +129,8 @@ class BaseActor:
     def set_damage(self, damage):
         if self.is_player:
             self.game_client.set_camera_shake(damage)
+        elif not self.state_machine.is_fire_state():
+            self.state_machine.set_fire_state()
 
         self.hp -= damage
         if self.hp <= 0:
@@ -136,6 +140,12 @@ class BaseActor:
     def destroy(self, scene_manager):
         scene_manager.delete_object(self.actor_object.name)
         scene_manager.delete_object(self.spline_path.name)
+
+    def get_bound_min(self):
+        return self.actor_object.bound_box.bound_min
+
+    def get_bound_max(self):
+        return self.actor_object.bound_box.bound_max
 
     def get_center(self):
         return self.actor_object.bound_box.bound_center

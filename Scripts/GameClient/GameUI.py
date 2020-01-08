@@ -69,15 +69,18 @@ class GameUI_HPBar:
     def __init__(self, offset):
         main_viewport = game_ui_manager.main_viewport
 
+        self.last_actor = None
         self.hp_bar_text = Widget(name="hp_bar_text", width=200.0, height=15.0, text="hp_bar_text", font_size=12)
 
-        self.hp_bar_background = Widget(name="hp_bar_background", width=200.0, height=25.0, color=Float4(0.0, 0.0, 0.0, 0.5))
+        self.hp_bar_background = Widget(name="hp_bar_background", width=100.0, height=10.0, color=Float4(0.0, 0.0, 0.0, 0.5))
         self.hp_bar_background.y = -(self.hp_bar_background.height + 5)
 
-        padding = 5
+        padding = 2
         self.hp_bar = Widget(name="hp_bar", width=self.hp_bar_background.width - padding * 2, height=self.hp_bar_background.height - padding * 2, color=Float4(1.0, 1.0, 0.3, 0.8))
         self.hp_bar.x = self.hp_bar_background.x + padding
         self.hp_bar.y = self.hp_bar_background.y + padding
+        self.hp_bar_width = self.hp_bar.width
+        self.hp_bar_goal_width = self.hp_bar_width
 
         pos_x = 15.0
         pos_y = main_viewport.height + offset
@@ -89,7 +92,25 @@ class GameUI_HPBar:
         main_viewport.add_widget(self.layout)
 
     def update(self, dt, actor):
-        pass
+        if actor is not None:
+            self.hp_bar_goal_width = (actor.hp / actor.max_hp) * self.hp_bar_width
+            position = game_ui_manager.game_client.to_2d_position(actor.get_center())
+            self.layout.x = position[0] - self.hp_bar_background.width / 2
+            self.layout.y = position[1] + self.hp_bar_background.height + 50.0
+        else:
+            self.hp_bar_goal_width = 0.0
+
+        if actor != self.last_actor:
+            self.last_actor = actor
+            if actor is not None:
+                self.layout.visible = True
+                self.hp_bar_text.text = actor.name
+            else:
+                self.layout.visible = False
+
+            self.hp_bar.width = self.hp_bar_goal_width
+        else:
+            self.hp_bar.width = lerp(self.hp_bar.width, self.hp_bar_goal_width, dt * 10.0)
 
 
 class GameUI_Icon3D:

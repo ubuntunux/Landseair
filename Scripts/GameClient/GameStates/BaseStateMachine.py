@@ -19,3 +19,6 @@ class BaseStateMachine(StateMachine):
 
     def get_actor_pos(self):
         return self.actor.actor_object.get_center()
+
+    def set_fire_state(self):
+        pass

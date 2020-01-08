@@ -120,6 +120,12 @@ class TankStateMachine(BaseStateMachine):
 
         self.set_state(STATES.IDLE)
 
+    def is_fire_state(self):
+        self.is_state(STATES.FIRE)
+
+    def set_fire_state(self):
+        self.set_state(STATES.FIRE)
+
     def update_state(self, delta_time):
         self.delta = delta_time
         super(TankStateMachine, self).update_state(delta_time)
