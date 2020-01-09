@@ -19,6 +19,7 @@ class ActorManager:
         self.bullet_manager = None
         self.player_actor = None
         self.actors = []
+        self.hit_actors = {}
         self.animation_meshes = {}
 
     def initialize(self, game_client):
@@ -58,6 +59,8 @@ class ActorManager:
         self.player_actor = PlayerActor("Player", game_client, player_actor, pos=Float3(0.0, 5.0, 0.0), rot=Float3(0.0, PI, 0.0), bullet=bullet)
 
     def destroy(self):
+        self.hit_actors = {}
+
         self.destroy_actor(self.player_actor)
         self.player_actor = None
 
@@ -78,7 +81,19 @@ class ActorManager:
         else:
             self.destroy_actor(actor, create_effect=True)
 
+    def add_hit_actor(self, actor):
+        self.hit_actors[actor] = HIT_RENDER_TIME
+
+    def updatge_hit_actors(self, dt):
+        new_hit_actors = {}
+        for hit_actor, hit_time in self.hit_actors.items():
+            if hit_actor.is_alive and dt < hit_time:
+                new_hit_actors[hit_actor] = hit_time - dt
+        self.hit_actors = new_hit_actors
+
     def update_actors(self, delta_time):
+        self.updatge_hit_actors(delta_time)
+
         if self.player_actor.is_alive:
             self.update_actor(self.player_actor, delta_time)
 
@@ -127,6 +142,8 @@ class BaseActor:
         self.is_alive = False
 
     def set_damage(self, damage):
+        self.actor_manager.add_hit_actor(self)
+
         if self.is_player:
             self.game_client.set_camera_shake(damage)
         elif not self.state_machine.is_fire_state():

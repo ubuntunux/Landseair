@@ -14,6 +14,7 @@ from GameClient.CameraShake import CameraShake
 from GameClient.Actor import ActorManager
 from GameClient.Bullet import BulletManager
 from GameClient.GameEffectManager import GameEffectManager
+from GameClient.GameCustomRenderer import GameCustomRenderer
 from GameClient.Constants import *
 
 
@@ -26,6 +27,8 @@ class GameClient:
         self.font_manager = None
         self.resource_manager = None
         self.scene_manager = None
+        self.renderer = None
+        self.game_custom_renderer = None
         self.viewport_manager = None
         self.main_viewport = None
         self.actor_manager = None
@@ -51,12 +54,14 @@ class GameClient:
         self.sound_manager = core_manager.sound_manager
         self.resource_manager = core_manager.resource_manager
         self.scene_manager = core_manager.scene_manager
+        self.renderer = core_manager.renderer
         self.viewport_manager = core_manager.viewport_manager
         self.main_viewport = core_manager.viewport_manager.main_viewport
         self.game_ui_manager = GameUIManager()
         self.actor_manager = ActorManager()
         self.bullet_manager = BulletManager()
         self.game_effect_manager = GameEffectManager()
+        self.game_custom_renderer = GameCustomRenderer()
 
         self.core_manager.set_render_font(False)
 
@@ -69,6 +74,7 @@ class GameClient:
         self.bullet_manager.initialize(game_client)
         self.actor_manager.initialize(game_client)
         self.game_effect_manager.initialize(game_client)
+        self.game_custom_renderer.initialize(game_client)
 
         self.camera_pitch_delay = 0.0
         self.camera_yaw_delay = 0.0
@@ -85,22 +91,19 @@ class GameClient:
         RenderOption.RENDER_GIZMO = False
         RenderOption.RENDER_OBJECT_ID = False
 
-        bound_min = self.stage_actor.bound_box.bound_min
-        bound_max = self.stage_actor.bound_box.bound_max
-        range_x = bound_max[0] - bound_min[0]
-        range_z = bound_max[2] - bound_min[2]
-
-        width, height, data = self.height_map_infos[0]
-
-        print("HeightMapWorld", range_x, range_z)
-        print("HeightMapTexture", width, height, len(self.height_map_infos))
-        for i, (width, height, data) in enumerate(self.height_map_infos):
-            print("Lod :", i, width, height, range_x / width, range_z / height)
-
-        xs = [0.2, 1.3, 4.5, 10.6, 13.5, 20.3, 40.2, 90.65, 120.3, 220.0, 550, 1204]
-        for x in xs:
-            print("")
-            self.get_lod_level(x, x)
+        # bound_min = self.stage_actor.bound_box.bound_min
+        # bound_max = self.stage_actor.bound_box.bound_max
+        # range_x = bound_max[0] - bound_min[0]
+        # range_z = bound_max[2] - bound_min[2]
+        # width, height, data = self.height_map_infos[0]
+        # print("HeightMapWorld", range_x, range_z)
+        # print("HeightMapTexture", width, height, len(self.height_map_infos))
+        # for i, (width, height, data) in enumerate(self.height_map_infos):
+        #     print("Lod :", i, width, height, range_x / width, range_z / height)
+        # xs = [0.2, 1.3, 4.5, 10.6, 13.5, 20.3, 40.2, 90.65, 120.3, 220.0, 550, 1204]
+        # for x in xs:
+        #     print("")
+        #     self.get_lod_level(x, x)
 
         self.sound_manager.play_music(SOUND_BGM, volume=0.5)
 
@@ -114,7 +117,7 @@ class GameClient:
     def generate_height_map_info(self):
         self.height_map_infos.clear()
         self.stage_actor = self.scene_manager.get_object('stage_00')
-        self.core_manager.renderer.render_heightmap(self.stage_actor)
+        self.renderer.render_heightmap(self.stage_actor)
         mipmap_count = RenderTargets.TEMP_HEIGHT_MAP.get_mipmap_count()
         for level in range(mipmap_count):
             data = RenderTargets.TEMP_HEIGHT_MAP.get_image_data(level=level)
@@ -361,8 +364,6 @@ class GameClient:
                         target_dist = dist
                         self.target_actor = actor
                         self.target_actor_distance = length(to_actor)
-        if self.target_actor is not None:
-            self.scene_manager.set_selected_object(self.target_actor.actor_object.name)
 
     def set_camera_shake(self, damage):
         total_camera_shake_time = 0.5
@@ -385,6 +386,7 @@ class GameClient:
         self.actor_manager.update_actors(delta_time)
         self.find_target_actor()
         self.bullet_manager.update_bullets(delta_time, self.actor_manager.actors)
+        self.game_custom_renderer.update(delta_time)
         self.game_effect_manager.update()
         self.game_ui_manager.update(delta_time)
         self.update_listener()

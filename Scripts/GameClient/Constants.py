@@ -1,12 +1,16 @@
 import sys
 import math
 import numpy as np
+from PyEngine3D.Utilities import Float4
 
 EPSILON = sys.float_info.epsilon
 GRAVITY = 20.0
 BOUND_BOX_OFFSET = 0.1
 
 CHECK_COLLIDE_HEIGHT_MAP_LEVEL = 3
+
+HIT_RENDER_TIME = 0.2
+HIT_RENDER_COLOR = Float4(10.0, 10.0, 2.0, 1.0)
 
 # Player
 ACCELERATION = 2.0
